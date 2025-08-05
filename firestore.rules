@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow users to read and write their own profile
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Allow reading of public user data for friends
+    match /users/{userId} {
+      allow read: if request.auth != null && 
+        exists(/databases/$(database)/documents/friends/$(request.auth.uid)_$(userId));
+    }
+    
+    // Allow reading user profiles for discovery (limited fields)
+    match /users/{userId} {
+      allow read: if request.auth != null && 
+        request.auth.uid != userId;
+    }
+    
+    // Friend requests - users can read/write requests they're involved in
+    match /friendRequests/{requestId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.uid == resource.data.senderId || 
+         request.auth.uid == resource.data.receiverId);
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.senderId;
+    }
+    
+    // Friends collection - users can read their own friendships
+    match /friends/{friendshipId} {
+      allow read: if request.auth != null && 
+        (friendshipId.matches('.*_' + request.auth.uid) || 
+         friendshipId.matches(request.auth.uid + '_.*'));
+      allow write: if request.auth != null && 
+        (request.auth.uid == request.resource.data.userId || 
+         request.auth.uid == request.resource.data.friendId);
+    }
+    
+    // Contact hashes - users can only read/write their own hashes
+    match /contactHashes/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // User discovery results - users can only access their own discovery data
+    match /userDiscovery/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

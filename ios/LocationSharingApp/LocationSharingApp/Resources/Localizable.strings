@@ -1,0 +1,75 @@
+/* Authentication Error Messages */
+"error.invalid_credentials" = "Please check your email and password and try again.";
+"error.user_not_found" = "No account found with this email address.";
+"error.email_already_in_use" = "An account with this email already exists.";
+"error.weak_password" = "Please choose a stronger password with at least 8 characters.";
+"error.too_many_requests" = "Too many attempts. Please wait a moment before trying again.";
+"error.network_auth" = "Network error. Please check your connection.";
+"error.user_disabled" = "Your account has been disabled. Please contact support.";
+"error.invalid_email" = "Please enter a valid email address.";
+"error.token_expired" = "Your session has expired. Please sign in again.";
+
+/* Location Error Messages */
+"error.location_permission_denied" = "Location permission is required. Please enable it in Settings.";
+"error.location_disabled" = "Location services are disabled. Please enable them in Settings.";
+"error.background_permission_denied" = "Background location permission is needed for continuous sharing.";
+"error.location_timeout" = "Unable to get your location. Please try again.";
+"error.location_inaccurate" = "Location accuracy is too low. Please move to an area with better GPS signal.";
+"error.gps_not_available" = "GPS is not available. Please enable GPS in Settings.";
+"error.location_settings" = "Location settings need to be configured. Please enable high accuracy mode.";
+
+/* Network Error Messages */
+"error.no_connection" = "No internet connection. Please check your network settings.";
+"error.network_timeout" = "Request timed out. Please try again.";
+"error.unauthorized" = "Authentication failed. Please sign in again.";
+"error.forbidden" = "Access denied. You don't have permission for this action.";
+"error.not_found" = "The requested resource was not found.";
+"error.service_unavailable" = "Service is temporarily unavailable. Please try again later.";
+"error.no_internet" = "Please check your internet connection and try again.";
+"error.request_timeout" = "Connection timed out. Please try again.";
+"error.cannot_connect" = "Failed to connect to server. Please try again.";
+"error.network_generic" = "Network error occurred. Please try again.";
+
+/* Friend Request Error Messages */
+"error.friend_not_found" = "No user found with this email address.";
+"error.friendship_already_exists" = "You are already friends with this person.";
+"error.cannot_request_self" = "You cannot send a friend request to yourself.";
+"error.friend_request_failed" = "Failed to send friend request. Please try again.";
+
+/* Map Error Messages */
+"error.map_load_failed" = "Failed to load map. Please try again.";
+"error.map_not_initialized" = "Map is not ready. Please wait a moment.";
+"error.marker_operation_failed" = "Failed to update location marker.";
+
+/* Generic Error Messages */
+"error.generic" = "Something went wrong. Please try again.";
+"error.unknown" = "An unknown error occurred. Please try again or contact support.";
+
+/* Recovery Suggestions */
+"recovery.location_permission" = "Go to Settings > Privacy & Security > Location Services and enable location for this app";
+"recovery.location_disabled" = "Go to Settings > Privacy & Security > Location Services and turn it on";
+"recovery.background_permission" = "Go to Settings > Privacy & Security > Location Services > Location Sharing and select 'Always'";
+"recovery.no_connection" = "Check your WiFi or cellular data connection";
+"recovery.network_auth" = "Check your internet connection and try signing in again";
+"recovery.no_internet" = "Check your WiFi or cellular data connection";
+
+/* Action Button Text */
+"action.open_settings" = "Open Settings";
+"action.retry" = "Retry";
+"action.try_again" = "Try Again";
+"action.contact_support" = "Contact Support";
+"action.dismiss" = "Dismiss";
+"action.ok" = "OK";
+
+/* Error Dialog Titles */
+"error.title.authentication" = "Authentication Error";
+"error.title.location" = "Location Error";
+"error.title.network" = "Network Error";
+"error.title.permission" = "Permission Required";
+"error.title.generic" = "Error";
+
+/* Error Severity Descriptions */
+"error.severity.critical" = "Critical Error";
+"error.severity.high" = "Important";
+"error.severity.medium" = "Warning";
+"error.severity.low" = "Notice";

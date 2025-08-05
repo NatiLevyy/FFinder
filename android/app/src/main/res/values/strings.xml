@@ -1,5 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Location Sharing</string>
-    <string name="google_maps_key">YOUR_GOOGLE_MAPS_API_KEY_HERE</string>
+    <string name="app_name">FFinder</string>
+    
+    <!-- Invite Friends Screen -->
+    <string name="invite_friends_title">Invite Friends</string>
+    <string name="contacts_permission_title">Access Your Contacts</string>
+    <string name="contacts_permission_description">We\'ll help you find friends who are already using FFinder and invite others to join.</string>
+    <string name="allow_contacts_access">Allow Access to Contacts</string>
+    <string name="no_contacts_found">No Contacts Found</string>
+    <string name="no_contacts_description">We couldn\'t find any contacts on your device. Make sure you have contacts saved and try again.</string>
+    <string name="try_again">Try Again</string>
+    <string name="search_contacts">Search contacts...</string>
+    <string name="friends_on_ffinder">Friends on FFinder</string>
+    <string name="invite_to_ffinder">Invite to FFinder</string>
+    <string name="add_friend">Add</string>
+    <string name="invite">Invite</string>
+    <string name="friends">Friends</string>
+    <string name="request_sent">Request sent</string>
+    <string name="request_received">Request received</string>
+    <string name="already_friends">Already friends</string>
+    <string name="not_on_ffinder">Not on FFinder</string>
+    <string name="finding_friends">Finding friends...</string>
+    <string name="searching_friends_description">Searching for friends who are already on FFinder</string>
+    <string name="no_search_results">No contacts found</string>
+    <string name="no_search_results_description">No contacts match \"%1$s\"</string>
+    
+    <!-- Friends Nearby Panel -->
+    <string name="search_friends_hint">Search friends...</string>
+    <string name="loading_friends">Loading friends...</string>
+    <string name="retry">Retry</string>
+    <string name="no_friends_sharing_location">No friends sharing location yet</string>
+    <string name="invite_friends_to_share_location">Invite friends to start sharing their location with you</string>
+    <string name="no_friends_found_matching">No friends found matching \"%1$s\"</string>
+    
+    <!-- Accessibility strings -->
+    <string name="friends_panel_toggle_open">Open friends nearby panel</string>
+    <string name="friends_panel_toggle_close">Close friends nearby panel</string>
+    <string name="friends_panel_opened">Friends panel opened</string>
+    <string name="friends_panel_closed">Friends panel closed</string>
+    <string name="friends_count_announcement">%1$d friends nearby</string>
+    <string name="friends_count_updated">Friends list updated, %1$d friends nearby</string>
+    <string name="search_friends_accessibility">Search friends by name</string>
+    <string name="clear_search_accessibility">Clear search</string>
+    <string name="friend_item_accessibility">Friend %1$s, %2$s away, %3$s</string>
+    <string name="friend_online_status">online</string>
+    <string name="friend_offline_status">offline</string>
+    <string name="navigate_action_accessibility">Navigate to %1$s</string>
+    <string name="ping_action_accessibility">Send ping to %1$s</string>
+    <string name="stop_sharing_action_accessibility">Stop sharing location with %1$s</string>
+    <string name="message_action_accessibility">Send message to %1$s</string>
+    <string name="retry_loading_friends">Retry loading friends</string>
+    <string name="friends_list_accessibility">Friends list with %1$d friends</string>
+    <string name="friends_panel_accessibility">Friends nearby panel</string>
+    <string name="map_with_friends_panel_accessibility">Map screen with friends panel</string>
+    
+    <!-- Google Maps API Key -->
+    <string name="google_maps_api_key">AIzaSyDynUiAXTN354tCutKG7dDc2iyOROLKuqQ</string>
 </resources>

@@ -1,0 +1,58 @@
+# FFinder Ktlint Configuration
+# Based on Kotlin coding conventions and Jetpack Compose best practices
+
+disabled_rules:
+  - filename
+  - no-wildcard-imports
+  - max-line-length
+
+# Allow wildcard imports for Compose and common packages
+ij_kotlin_imports_layout: |
+  *
+  java.**
+  javax.**
+  kotlin.**
+  kotlinx.**
+  ^
+
+# Indentation settings
+indent_style: space
+indent_size: 4
+continuation_indent_size: 8
+
+# Line length
+max_line_length: 120
+
+# Import ordering
+ij_kotlin_allow_trailing_comma: true
+ij_kotlin_allow_trailing_comma_on_call_site: true
+
+# Compose specific settings
+ktlint_compose_wrapping_multivalueargument: true
+ktlint_compose_wrapping_multivalue_parameter: true
+
+# Function naming
+ktlint_function_naming_ignore_when_annotated_with: Composable
+
+# Allow wildcard imports for these packages
+ktlint_standard_no-wildcard-imports: disabled
+
+# Experimental rules
+ktlint_experimental: true
+
+# Custom rules for FFinder
+custom_rules:
+  # Allow PascalCase for Composable functions
+  - rule: function-naming
+    config:
+      ignoreAnnotated: ["Composable"]
+  
+  # Enforce camelCase for variables and functions
+  - rule: property-naming
+    config:
+      allowedPattern: "^[a-z][a-zA-Z0-9]*$"
+  
+  # Allow SCREAMING_SNAKE_CASE for constants
+  - rule: constant-naming
+    config:
+      allowedPattern: "^[A-Z][A-Z0-9_]*$"

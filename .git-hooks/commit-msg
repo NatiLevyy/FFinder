@@ -1,0 +1,31 @@
+#!/bin/sh
+# FFinder Commit Message Hook
+# Validates commit message format
+
+# Get the commit message from the COMMIT_EDITMSG file
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Valid commit types
+VALID_TYPES="Feature|Fix|Refactor|Style|Docs|Test|Chore|Perf"
+
+# Check if commit message follows the required format
+if ! echo "$COMMIT_MSG" | grep -E "^\[($VALID_TYPES)\] .+" > /dev/null; then
+    echo "\033[31m❌ Invalid commit message format!\033[0m"
+    echo "\033[33mCommit message must follow format: [Type] Description\033[0m"
+    echo "\033[33mValid types: Feature, Fix, Refactor, Style, Docs, Test, Chore, Perf\033[0m"
+    echo "\033[33mExample: [Feature] Add animated FAB for location sharing\033[0m"
+    exit 1
+fi
+
+# Check if commit message is too short (less than 10 characters after the type)
+MSG_CONTENT=$(echo "$COMMIT_MSG" | sed -E 's/^\[($VALID_TYPES)\] //')
+if [ ${#MSG_CONTENT} -lt 10 ]; then
+    echo "\033[31m❌ Commit message description is too short!\033[0m"
+    echo "\033[33mPlease provide a more descriptive message (at least 10 characters)\033[0m"
+    exit 1
+fi
+
+# All checks passed
+echo "\033[32m✅ Commit message format is valid!\033[0m"
+exit 0

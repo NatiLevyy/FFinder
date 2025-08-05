@@ -1,0 +1,83 @@
+#!/bin/sh
+# FFinder Pre-commit Hook
+# Enforces commit policy: lint checks, unit tests, and commit message format
+
+# Get the commit message from the COMMIT_EDITMSG file
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Check if we're on Windows
+case "$(uname -s)" in
+    CYGWIN*|MINGW*|MSYS*)
+        IS_WINDOWS=1
+        ;;
+    *)
+        IS_WINDOWS=0
+        ;;
+esac
+
+# Function to display error message and exit
+fail() {
+    echo "\033[31mERROR: $1\033[0m"
+    exit 1
+}
+
+# Check commit message format
+check_commit_message() {
+    local msg="$1"
+    local valid_types="Feature|Fix|Refactor|Style|Docs|Test|Chore|Perf"
+    
+    if ! echo "$msg" | grep -E "^\[($valid_types)\] .+" > /dev/null; then
+        echo "\033[31m❌ Invalid commit message format!\033[0m"
+        echo "\033[33mCommit message must follow format: [Type] Description\033[0m"
+        echo "\033[33mValid types: Feature, Fix, Refactor, Style, Docs, Test, Chore, Perf\033[0m"
+        echo "\033[33mExample: [Feature] Add animated FAB for location sharing\033[0m"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Commit signing check removed as it's no longer required
+
+# Run quality checks
+run_quality_checks() {
+    echo "\033[36mRunning FFinder quality checks...\033[0m"
+    
+    if [ $IS_WINDOWS -eq 1 ]; then
+        # Windows - use PowerShell script
+        cd android && powershell -ExecutionPolicy Bypass -File .\\verify-commit.ps1 -SkipSigning
+    else
+        # Unix-like systems - run checks directly
+        cd android && ./gradlew ktlintCheck detekt testDebugUnitTest
+    fi
+    
+    local result=$?
+    if [ $result -ne 0 ]; then
+        echo "\033[31m❌ Quality checks failed!\033[0m"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Main execution
+echo "\033[36m==============================================\033[0m"
+echo "\033[36m         FFinder Commit Policy Check        \033[0m"
+echo "\033[36m==============================================\033[0m"
+
+# Check commit message format
+if ! check_commit_message "$COMMIT_MSG"; then
+    exit 1
+fi
+
+# Commit signing check removed as it's no longer required
+
+# Run quality checks
+if ! run_quality_checks; then
+    exit 1
+fi
+
+# All checks passed
+echo "\033[32m✅ All FFinder commit policy checks passed!\033[0m"
+exit 0

@@ -3,7 +3,9 @@ import Security
 
 /**
  * Manages JWT tokens including storage, retrieval, and validation.
- * Uses Keychain for secure token storage.
+ * Uses enhanced secure token manager for improved security.
+ * 
+ * @deprecated Use SecureTokenManager directly for new implementations
  */
 class JwtTokenManager {
     
@@ -21,12 +23,17 @@ class JwtTokenManager {
     
     static let shared = JwtTokenManager()
     
+    // MARK: - Private Properties
+    
+    private let secureTokenManager = SecureTokenManager.shared
+    
     private init() {}
     
     // MARK: - Token Storage
     
     /**
-     * Stores authentication tokens securely in Keychain.
+     * Stores authentication tokens securely.
+     * Delegates to SecureTokenManager for enhanced security.
      * 
      * - Parameters:
      *   - accessToken: The JWT access token
@@ -34,18 +41,14 @@ class JwtTokenManager {
      *   - expiresAt: The timestamp when the access token expires
      */
     func storeTokens(accessToken: String, refreshToken: String, expiresAt: Int64) async throws {
-        try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .background).async {
-                do {
-                    try self.storeInKeychain(key: Constants.accessTokenKey, value: accessToken)
-                    try self.storeInKeychain(key: Constants.refreshTokenKey, value: refreshToken)
-                    try self.storeInKeychain(key: Constants.tokenExpiresAtKey, value: String(expiresAt))
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
+        // Extract user ID from token for secure storage
+        let userId = extractUserIdFromToken(accessToken) ?? "unknown"
+        try await secureTokenManager.storeTokens(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            expiresAt: expiresAt,
+            userId: userId
+        )
     }
     
     /**
@@ -54,12 +57,7 @@ class JwtTokenManager {
      * - Returns: The access token or nil if not found
      */
     func getAccessToken() async -> String? {
-        return await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .background).async {
-                let token = self.retrieveFromKeychain(key: Constants.accessTokenKey)
-                continuation.resume(returning: token)
-            }
-        }
+        return try? await secureTokenManager.getAccessToken()
     }
     
     /**
@@ -68,12 +66,7 @@ class JwtTokenManager {
      * - Returns: The refresh token or nil if not found
      */
     func getRefreshToken() async -> String? {
-        return await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .background).async {
-                let token = self.retrieveFromKeychain(key: Constants.refreshTokenKey)
-                continuation.resume(returning: token)
-            }
-        }
+        return try? await secureTokenManager.getRefreshToken()
     }
     
     /**
@@ -82,16 +75,7 @@ class JwtTokenManager {
      * - Returns: The expiration timestamp or 0 if not found
      */
     func getTokenExpiresAt() async -> Int64 {
-        return await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .background).async {
-                if let expiresAtString = self.retrieveFromKeychain(key: Constants.tokenExpiresAtKey),
-                   let expiresAt = Int64(expiresAtString) {
-                    continuation.resume(returning: expiresAt)
-                } else {
-                    continuation.resume(returning: 0)
-                }
-            }
-        }
+        return (try? await secureTokenManager.getTokenExpiresAt()) ?? 0
     }
     
     // MARK: - Token Validation
@@ -102,13 +86,7 @@ class JwtTokenManager {
      * - Returns: True if the token is valid, false otherwise
      */
     func isTokenValid() async -> Bool {
-        guard let token = await getAccessToken() else { return false }
-        
-        let expiresAt = await getTokenExpiresAt()
-        let currentTime = Int64(Date().timeIntervalSince1970 * 1000)
-        let bufferMs = Int64(Constants.tokenRefreshBufferSeconds * 1000)
-        
-        return expiresAt > currentTime + bufferMs
+        return (try? await secureTokenManager.isTokenValid()) ?? false
     }
     
     /**
@@ -117,11 +95,7 @@ class JwtTokenManager {
      * - Returns: True if the token should be refreshed, false otherwise
      */
     func shouldRefreshToken() async -> Bool {
-        let expiresAt = await getTokenExpiresAt()
-        let currentTime = Int64(Date().timeIntervalSince1970 * 1000)
-        let bufferMs = Int64(Constants.tokenRefreshBufferSeconds * 1000)
-        
-        return expiresAt > 0 && expiresAt <= currentTime + bufferMs
+        return (try? await secureTokenManager.shouldRefreshToken()) ?? false
     }
     
     /**
@@ -184,18 +158,7 @@ class JwtTokenManager {
      * Clears all stored authentication tokens.
      */
     func clearTokens() async throws {
-        try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .background).async {
-                do {
-                    try self.deleteFromKeychain(key: Constants.accessTokenKey)
-                    try self.deleteFromKeychain(key: Constants.refreshTokenKey)
-                    try self.deleteFromKeychain(key: Constants.tokenExpiresAtKey)
-                    continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
-        }
+        try await secureTokenManager.clearTokens()
     }
     
     /**
@@ -204,9 +167,7 @@ class JwtTokenManager {
      * - Returns: True if tokens exist, false otherwise
      */
     func hasStoredTokens() async -> Bool {
-        let accessToken = await getAccessToken()
-        let refreshToken = await getRefreshToken()
-        return accessToken != nil && refreshToken != nil
+        return (try? await secureTokenManager.hasStoredTokens()) ?? false
     }
     
     // MARK: - Private Keychain Methods

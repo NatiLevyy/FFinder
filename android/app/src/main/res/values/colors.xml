@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- FFinder Brand Colors -->
+    <color name="ffinder_primary">#FF2E7D32</color>
+    <color name="ffinder_primary_variant">#FF1B5E20</color>
+    <color name="ffinder_secondary">#FF4CAF50</color>
+    <color name="ffinder_secondary_variant">#FF388E3C</color>
+    <color name="ffinder_accent">#FF8BC34A</color>
+    <color name="ffinder_surface">#FFFFFFFF</color>
+    <color name="ffinder_background">#FFF8F9FA</color>
+    <color name="ffinder_error">#FFD32F2F</color>
+    <color name="ffinder_warning">#FFFF9800</color>
+    <color name="ffinder_success">#FF4CAF50</color>
+    <color name="ffinder_info">#FF2196F3</color>
+    
+    <!-- Text Colors -->
+    <color name="ffinder_on_primary">#FFFFFFFF</color>
+    <color name="ffinder_on_secondary">#FF000000</color>
+    <color name="ffinder_on_surface">#FF212121</color>
+    <color name="ffinder_on_background">#FF212121</color>
+    <color name="ffinder_on_error">#FFFFFFFF</color>
+    
+    <!-- Animation State Colors -->
+    <color name="ffinder_pulse_active">#4D4CAF50</color>
+    <color name="ffinder_loading_overlay">#80000000</color>
+    <color name="ffinder_transition_overlay">#20000000</color>
+    
+    <!-- Legacy Colors (for compatibility) -->
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
