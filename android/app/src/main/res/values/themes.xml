@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.LocationSharing" parent="android:Theme.Material.Light">
-        <!-- Simple theme -->
+        <!-- Minimal theme for Compose app -->
+        <item name="android:colorPrimary">@color/ffinder_primary</item>
+        <item name="android:statusBarColor">@color/ffinder_primary</item>
+    </style>
+    
+    <!-- FFinder Splash Screen Theme -->
+    <style name="Theme.FFinder.Splash" parent="Theme.LocationSharing">
+        <!-- White background for splash screen -->
+        <item name="android:windowBackground">@android:color/white</item>
+        <!-- Hide action bar for clean splash -->
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <!-- Full screen splash -->
+        <item name="android:windowFullscreen">true</item>
     </style>
 </resources>

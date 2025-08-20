@@ -79,13 +79,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.locationsharing.app.BuildConfig
 import com.locationsharing.app.domain.model.Contact
 import com.locationsharing.app.domain.model.DiscoveredUser
 import com.locationsharing.app.domain.model.FriendRequestStatus
 import com.locationsharing.app.utils.PhoneNumberUtils
+import com.locationsharing.app.ui.components.ContactDiscoveryPrompt
 import timber.log.Timber
 
 /**
@@ -96,8 +97,9 @@ import timber.log.Timber
 @Composable
 fun InviteFriendsScreen(
     onBackClick: () -> Unit,
+    onEnableContactDiscovery: () -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: InviteFriendsViewModel = hiltViewModel()
+    viewModel: InviteFriendsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -234,23 +236,32 @@ fun InviteFriendsScreen(
                 }
                 
                 else -> {
-                    InviteFriendsContent(
-                        uiState = uiState,
-                        searchQuery = searchQuery,
-                        onSearchQueryChange = { searchQuery = it },
-                        onDiscoveredUserToggle = { viewModel.selectDiscoveredUser(it) },
-                        onNonUserContactToggle = { viewModel.selectNonUserContact(it) },
-                        onSendFriendRequest = { user ->
-                            // Send individual friend request
-                            Timber.d("🎯 UI: Sending friend request to ${user.displayName}")
-                            viewModel.sendSingleFriendRequest(user.userId)
-                        },
-                        onInviteContact = { contact ->
-                            Timber.d("📤 UI: Inviting contact ${contact.displayName}")
-                            sendSingleInvitation(context, contact)
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // Contact discovery prompt
+                        ContactDiscoveryPrompt(
+                            onEnableContactDiscovery = onEnableContactDiscovery,
+                            onDismiss = { /* Prompt will handle dismissal itself */ }
+                        )
+                        
+                        // Main content
+                        InviteFriendsContent(
+                            uiState = uiState,
+                            searchQuery = searchQuery,
+                            onSearchQueryChange = { searchQuery = it },
+                            onDiscoveredUserToggle = { viewModel.selectDiscoveredUser(it) },
+                            onNonUserContactToggle = { viewModel.selectNonUserContact(it) },
+                            onSendFriendRequest = { user ->
+                                // Send individual friend request
+                                Timber.d("🎯 UI: Sending friend request to ${user.displayName}")
+                                viewModel.sendSingleFriendRequest(user.userId)
+                            },
+                            onInviteContact = { contact ->
+                                Timber.d("📤 UI: Inviting contact ${contact.displayName}")
+                                sendSingleInvitation(context, contact)
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }

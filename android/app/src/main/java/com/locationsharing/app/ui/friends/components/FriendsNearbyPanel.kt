@@ -1,36 +1,56 @@
 package com.locationsharing.app.ui.friends.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBar
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.rememberLottieComposition
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -40,141 +60,207 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.locationsharing.app.R
 import com.locationsharing.app.domain.model.NearbyFriend
 import com.locationsharing.app.ui.friends.NearbyPanelEvent
 import com.locationsharing.app.ui.friends.NearbyUiState
 import com.locationsharing.app.ui.theme.FFinderTheme
+import com.locationsharing.app.ui.friends.logging.NearbyPanelLogger
+import com.locationsharing.app.ui.friends.components.NearbyPanelPerformanceMonitor
 import com.google.android.gms.maps.model.LatLng
 
-/**
- * A composable that displays the Friends Nearby Panel with search functionality.
- * 
- * Implements requirements:
- * - 2.1: Full-height side sheet with LazyColumn sorted by distance
- * - 2.2: Display friends with avatar, name, distance, and status
- * - 2.4: Empty state for no friends sharing location
- * - 2.5: Error state for location permission issues
- * - 3.1: SearchBar at the top for filtering friends
- * - 3.2: Real-time filtering by display name
- * - 3.3: Show all friends when search is cleared
- * - 3.4: No friends found message for empty search results
- * - 7.3: Search accessibility labels and hints
- * 
- * @param uiState The current UI state containing friends data and search query
- * @param onEvent Callback for handling user events
- * @param modifier Modifier for styling the component
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FriendsNearbyPanel(
+    uiState: NearbyUiState,
+    onEvent: (NearbyPanelEvent) -> Unit,
+    modifier: Modifier = Modifier,
+    isVisible: Boolean = true,
+    onScrimClick: (() -> Unit)? = null
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .zIndex(10f)
+    ) {
+        AnimatedVisibility(
+            visible = isVisible,
+            enter = androidx.compose.animation.fadeIn(
+                animationSpec = tween(durationMillis = 200)
+            ),
+            exit = androidx.compose.animation.fadeOut(
+                animationSpec = tween(durationMillis = 200)
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable { onScrimClick?.invoke() }
+            )
+        }
+        
+        AnimatedVisibility(
+            visible = isVisible,
+            enter = slideInHorizontally(
+                initialOffsetX = { -it },
+                animationSpec = tween(
+                    durationMillis = 300,
+                    easing = androidx.compose.animation.core.FastOutLinearInEasing
+                )
+            ),
+            exit = slideOutHorizontally(
+                targetOffsetX = { -it },
+                animationSpec = tween(
+                    durationMillis = 300,
+                    easing = androidx.compose.animation.core.FastOutLinearInEasing
+                )
+            )
+        ) {
+            EnhancedDrawerContent(
+                uiState = uiState,
+                onEvent = onEvent,
+                modifier = Modifier.align(Alignment.CenterStart)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EnhancedDrawerContent(
     uiState: NearbyUiState,
     onEvent: (NearbyPanelEvent) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val accessibilityManager = LocalAccessibilityManager.current
     
-    // Announce friend count updates for screen readers
-    LaunchedEffect(uiState.filteredFriends.size) {
+    val filteredFriends = remember(uiState.friends, uiState.searchQuery) {
+        uiState.filteredFriends
+    }
+    
+    LaunchedEffect(filteredFriends.size) {
         if (!uiState.isLoading && uiState.error == null) {
-            // The announcement will be made through the live region in the LazyColumn
+            NearbyPanelLogger.logFriendListState(
+                friends = filteredFriends,
+                searchQuery = uiState.searchQuery
+            )
         }
     }
-    Column(
+    
+    LaunchedEffect(Unit) {
+        NearbyPanelLogger.logMemoryUsage("FriendListUpdate")
+    }
+    
+    Surface(
         modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp)
+            .width(280.dp)
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 8.dp,
+        tonalElevation = 3.dp
     ) {
-        // Search Bar with accessibility support
-        SearchBar(
-            query = uiState.searchQuery,
-            onQueryChange = { query -> onEvent(NearbyPanelEvent.SearchQuery(query)) },
-            onSearch = { /* No action needed for real-time search */ },
-            active = false,
-            onActiveChange = { /* Not using active state */ },
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .semantics {
-                    contentDescription = "Search friends by name"
-                },
-            placeholder = {
-                Text(
-                    text = stringResource(R.string.search_friends_hint),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search icon",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            trailingIcon = {
-                if (uiState.searchQuery.isNotEmpty()) {
-                    IconButton(
-                        onClick = { onEvent(NearbyPanelEvent.SearchQuery("")) },
-                        modifier = Modifier.semantics {
-                            contentDescription = "Clear search"
-                        }
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            SearchBar(
+                query = uiState.searchQuery,
+                onQueryChange = { query -> 
+                    NearbyPanelLogger.measureUIUpdate(
+                        "SearchQuery",
+                        uiState.friends.size
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = null, // Content description is on the button
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        onEvent(NearbyPanelEvent.SearchQuery(query))
+                    }
+                },
+                onSearch = { /* No-op for now */ },
+                active = false,
+                onActiveChange = { /* Not using active state */ },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics {
+                        contentDescription = "Search friends by name"
+                    },
+                placeholder = {
+                    Text(
+                        text = stringResource(R.string.search_friends_hint),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search icon",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                trailingIcon = {
+                    if (uiState.searchQuery.isNotEmpty()) {
+                        IconButton(
+                            onClick = { onEvent(NearbyPanelEvent.SearchQuery("")) },
+                            modifier = Modifier.semantics {
+                                contentDescription = "Clear search"
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
-            }
-        ) {
-            // Empty content for SearchBar - we're not using the dropdown functionality
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Content based on state
-        when {
-            uiState.isLoading -> {
-                LoadingState(
-                    modifier = Modifier.fillMaxSize()
-                )
+            ) {
+                // Empty content for SearchBar
             }
             
-            uiState.error != null -> {
-                ErrorState(
-                    error = uiState.error,
-                    onRetry = { onEvent(NearbyPanelEvent.RefreshFriends) },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+            Spacer(modifier = Modifier.height(16.dp))
             
-            uiState.filteredFriends.isEmpty() && uiState.searchQuery.isNotEmpty() -> {
-                NoSearchResultsState(
-                    searchQuery = uiState.searchQuery,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            
-            uiState.filteredFriends.isEmpty() -> {
-                EmptyState(
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            
-            else -> {
-                FriendsList(
-                    friends = uiState.filteredFriends,
-                    onFriendClick = { friendId -> onEvent(NearbyPanelEvent.FriendClick(friendId)) },
-                    modifier = Modifier.fillMaxSize()
-                )
+            when {
+                uiState.isLoading -> {
+                    LoadingState(
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                
+                uiState.error != null -> {
+                    ErrorState(
+                        error = uiState.error,
+                        onRetry = { onEvent(NearbyPanelEvent.RefreshFriends) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                
+                filteredFriends.isEmpty() && uiState.searchQuery.isNotEmpty() -> {
+                    NoSearchResultsState(
+                        searchQuery = uiState.searchQuery,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                
+                filteredFriends.isEmpty() -> {
+                    EmptyState(
+                        modifier = Modifier.fillMaxSize(),
+                        onInviteFriends = { onEvent(NearbyPanelEvent.InviteFriends) }
+                    )
+                }
+                
+                else -> {
+                    FriendsList(
+                        friends = filteredFriends,
+                        onFriendClick = { friendId -> onEvent(NearbyPanelEvent.FriendClick(friendId)) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
     }
 }
 
-/**
- * Loading state composable
- */
 @Composable
 private fun LoadingState(
     modifier: Modifier = Modifier
@@ -194,16 +280,12 @@ private fun LoadingState(
             Text(
                 text = stringResource(R.string.loading_friends),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
-/**
- * Error state composable with retry functionality
- */
 @Composable
 private fun ErrorState(
     error: String,
@@ -216,22 +298,21 @@ private fun ErrorState(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(16.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Error,
-                contentDescription = "Error",
+                contentDescription = null,
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.error
             )
-            
             Text(
                 text = error,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
             Button(
                 onClick = onRetry,
                 modifier = Modifier.semantics {
@@ -244,48 +325,48 @@ private fun ErrorState(
     }
 }
 
-/**
- * Empty state when no friends are sharing location
- */
 @Composable
 private fun EmptyState(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onInviteFriends: () -> Unit = {}
 ) {
+    val composition = rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.location_animation)).value
+    
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(16.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.LocationOff,
-                contentDescription = "No friends sharing location",
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            // Use Lottie animation from res/raw/location_animation.json
+            LottieAnimation(
+                composition = composition,
+                modifier = Modifier.height(120.dp),
+                iterations = com.airbnb.lottie.compose.LottieConstants.IterateForever
             )
             
             Text(
-                text = stringResource(R.string.no_friends_sharing_location),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
-            
-            Text(
-                text = stringResource(R.string.invite_friends_to_share_location),
+                text = "No friends found within 10 km. Invite friends to appear here.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            
+            TextButton(
+                onClick = onInviteFriends,
+                modifier = Modifier.semantics {
+                    contentDescription = "Invite friends to share location"
+                }
+            ) {
+                Text("Invite friends")
+            }
         }
     }
 }
 
-/**
- * No search results state
- */
 @Composable
 private fun NoSearchResultsState(
     searchQuery: String,
@@ -297,105 +378,88 @@ private fun NoSearchResultsState(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(16.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Search,
-                contentDescription = "No search results",
+                contentDescription = null,
                 modifier = Modifier.size(48.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
             Text(
-                text = stringResource(R.string.no_friends_found_matching, searchQuery),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
+                 text = stringResource(R.string.no_friends_found_matching, searchQuery),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
-/**
- * Friends list with lazy loading structure optimized for large friend lists (500+ items)
- * Implements performance optimizations for smooth scrolling
- */
 @Composable
 private fun FriendsList(
     friends: List<NearbyFriend>,
     onFriendClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Performance optimization: Use remember for stable references
-    val stableFriends = remember(friends) { friends }
-    val stableOnClick = remember(onFriendClick) { onFriendClick }
-    
-    // Performance optimization: Remember LazyListState for scroll position preservation
-    val listState = remember { androidx.compose.foundation.lazy.LazyListState() }
-    
     LazyColumn(
-        state = listState,
-        modifier = modifier.semantics {
-            contentDescription = "Friends list with ${friends.size} friends"
-            liveRegion = LiveRegionMode.Polite
-        },
+        modifier = modifier
+            .semantics {
+                liveRegion = LiveRegionMode.Polite
+                contentDescription = "Friends list with ${friends.size} friends"
+            },
         contentPadding = PaddingValues(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(
-            items = stableFriends,
-            key = { friend -> friend.id },
-            contentType = { "friend_item" } // Performance: Enable item recycling
+            items = friends,
+            key = { friend -> friend.id }
         ) { friend ->
-            // Performance optimization: Use stable key and content type
-            NearbyFriendItem(
+            FriendItem(
                 friend = friend,
-                onClick = { stableOnClick(friend.id) }
+                onClick = { onFriendClick(friend.id) }
             )
         }
-        
-        // Performance indicator for large lists
-        if (friends.size > 100) {
-            item(
-                key = "performance_info",
-                contentType = "info_item"
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Showing ${friends.size} friends",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+    }
+}
+
+@Composable
+private fun FriendItem(
+    friend: NearbyFriend,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics {
+                 contentDescription = "${friend.displayName}, ${friend.formattedDistance}"
+             },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+             Text(
+                 text = friend.displayName,
+                 style = MaterialTheme.typography.bodyLarge,
+                 color = MaterialTheme.colorScheme.onSurfaceVariant
+             )
+             Text(
+                 text = friend.formattedDistance,
+                 style = MaterialTheme.typography.bodySmall,
+                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+             )
         }
-        
-        // Placeholder for future pagination loading indicator
-        // This structure prepares for lazy loading of 500+ friends
-        /*
-        if (hasMoreFriends) {
-            item(
-                key = "loading_indicator",
-                contentType = "loading_item"
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-        }
-        */
     }
 }
 
@@ -403,31 +467,31 @@ private fun FriendsList(
 @Composable
 fun FriendsNearbyPanelPreview() {
     FFinderTheme {
-        // Preview with friends
         FriendsNearbyPanel(
             uiState = NearbyUiState(
                 isLoading = false,
                 searchQuery = "",
                 friends = listOf(
-                    NearbyFriend(
-                        id = "1",
-                        displayName = "Alice Johnson",
-                        avatarUrl = null,
-                        distance = 150.0,
-                        isOnline = true,
-                        lastUpdated = System.currentTimeMillis(),
-                        latLng = LatLng(37.7749, -122.4194)
-                    ),
-                    NearbyFriend(
-                        id = "2",
-                        displayName = "Bob Smith",
-                        avatarUrl = null,
-                        distance = 1200.0,
-                        isOnline = false,
-                        lastUpdated = System.currentTimeMillis() - 300000,
-                        latLng = LatLng(37.7849, -122.4094)
-                    )
-                )
+                     NearbyFriend(
+                         id = "1",
+                         displayName = "Alice Johnson",
+                         avatarUrl = null,
+                         distance = 200.0,
+                         isOnline = true,
+                         lastUpdated = System.currentTimeMillis(),
+                         latLng = LatLng(37.7749, -122.4194)
+                     ),
+                     NearbyFriend(
+                         id = "2",
+                         displayName = "Bob Smith",
+                         avatarUrl = null,
+                         distance = 500.0,
+                         isOnline = false,
+                         lastUpdated = System.currentTimeMillis(),
+                         latLng = LatLng(37.7849, -122.4094)
+                     )
+                 ),
+                error = null
             ),
             onEvent = {}
         )
@@ -438,12 +502,12 @@ fun FriendsNearbyPanelPreview() {
 @Composable
 fun FriendsNearbyPanelEmptyPreview() {
     FFinderTheme {
-        // Preview with empty state
         FriendsNearbyPanel(
             uiState = NearbyUiState(
                 isLoading = false,
                 searchQuery = "",
-                friends = emptyList()
+                friends = emptyList(),
+                error = null
             ),
             onEvent = {}
         )
@@ -454,12 +518,12 @@ fun FriendsNearbyPanelEmptyPreview() {
 @Composable
 fun FriendsNearbyPanelLoadingPreview() {
     FFinderTheme {
-        // Preview with loading state
         FriendsNearbyPanel(
             uiState = NearbyUiState(
                 isLoading = true,
                 searchQuery = "",
-                friends = emptyList()
+                friends = emptyList(),
+                error = null
             ),
             onEvent = {}
         )
@@ -470,7 +534,6 @@ fun FriendsNearbyPanelLoadingPreview() {
 @Composable
 fun FriendsNearbyPanelErrorPreview() {
     FFinderTheme {
-        // Preview with error state
         FriendsNearbyPanel(
             uiState = NearbyUiState(
                 isLoading = false,

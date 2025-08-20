@@ -1,13 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- FFinder Brand Colors -->
-    <color name="ffinder_primary">#FF2E7D32</color>
-    <color name="ffinder_primary_variant">#FF1B5E20</color>
-    <color name="ffinder_secondary">#FF4CAF50</color>
-    <color name="ffinder_secondary_variant">#FF388E3C</color>
-    <color name="ffinder_accent">#FF8BC34A</color>
-    <color name="ffinder_surface">#FFFFFFFF</color>
-    <color name="ffinder_background">#FFF8F9FA</color>
+    <!-- FFinder Brand Colors (Material 3 Compliant - MapScreen Redesign) -->
+    <color name="ffinder_primary">#2E7D32</color>          <!-- Requirement 10.1: Primary green -->
+    <color name="ffinder_primary_variant">#1B5E20</color>
+    <color name="ffinder_secondary">#6B4F8F</color>        <!-- Requirement 10.2: Secondary purple -->
+    <color name="ffinder_secondary_variant">#5A3F7A</color>
+    
+    <!-- Surface and Background Colors -->
+    <color name="ffinder_surface">#FFFFFF</color>          <!-- Requirement 10.3: White surface -->
+    <color name="ffinder_background">#F1F1F1</color>       <!-- Requirement 10.4: #F1F1F1 background -->
+    
+    <!-- Gradient Background Colors -->
+    <color name="ffinder_gradient_top">#6B4F8F</color>
+    <color name="ffinder_gradient_bottom">#2E7D32</color>
+    <color name="ffinder_accent">#8BC34A</color>
+    <color name="ffinder_primary_container">#1B5E20</color>
     <color name="ffinder_error">#FFD32F2F</color>
     <color name="ffinder_warning">#FFFF9800</color>
     <color name="ffinder_success">#FF4CAF50</color>
@@ -24,6 +31,14 @@
     <color name="ffinder_pulse_active">#4D4CAF50</color>
     <color name="ffinder_loading_overlay">#80000000</color>
     <color name="ffinder_transition_overlay">#20000000</color>
+    
+    <!-- Home Screen Specific Colors -->
+    <color name="ffinder_hero_text">#FFFFFF</color>
+    <color name="ffinder_card_surface">#F2FFFFFF</color>
+    <color name="ffinder_ripple_purple">#4D6B4F8F</color>
+    
+    <!-- Launcher Icon Background -->
+    <color name="ic_launcher_background">#6B4F8F</color>
     
     <!-- Legacy Colors (for compatibility) -->
     <color name="purple_500">#FF6200EE</color>

@@ -6,11 +6,13 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.locationsharing.app.BuildConfig
 import com.locationsharing.app.domain.model.FriendRequestStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,9 +36,16 @@ interface FriendsRepository {
     suspend fun removeFriend(friendId: String): Result<Unit>
     suspend fun blockFriend(friendId: String): Result<Unit>
     
+    // Global search method
+    suspend fun searchFriends(query: String): Flow<androidx.paging.PagingData<Friend>>
+    
     suspend fun updateLocationSharing(enabled: Boolean): Result<Unit>
     suspend fun updatePrivacySettings(preferences: FriendPreferences): Result<Unit>
     suspend fun updateOnlineStatus(isOnline: Boolean): Result<Unit>
+    
+    // Location sharing methods
+    suspend fun startLocationSharing(): Result<Unit>
+    suspend fun stopLocationSharing(): Result<Unit>
     
     // Nearby panel interaction methods (stub implementations)
     suspend fun sendPing(friendId: String): Result<Unit>
@@ -266,9 +275,9 @@ class FirebaseFriendsRepository @Inject constructor(
     /**
      * Send a friend request to another user
      */
-    override suspend fun sendFriendRequest(toUserId: String, message: String?): Result<String> {
-        return try {
-            val userId = currentUserId ?: return Result.failure(Exception("User not authenticated"))
+    override suspend fun sendFriendRequest(toUserId: String, message: String?): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val userId = currentUserId ?: return@withContext Result.failure(Exception("User not authenticated"))
             
             // Check if request already exists
             val existingRequest = firestore.collection(FRIEND_REQUESTS_COLLECTION)
@@ -279,7 +288,7 @@ class FirebaseFriendsRepository @Inject constructor(
                 .await()
             
             if (!existingRequest.isEmpty) {
-                return Result.failure(Exception("Friend request already sent"))
+                return@withContext Result.failure(Exception("Friend request already sent"))
             }
             
             // Check if they're already friends
@@ -291,7 +300,7 @@ class FirebaseFriendsRepository @Inject constructor(
                 .await()
             
             if (existingFriendship.exists()) {
-                return Result.failure(Exception("Already friends with this user"))
+                return@withContext Result.failure(Exception("Already friends with this user"))
             }
             
             // Get current user profile
@@ -330,9 +339,9 @@ class FirebaseFriendsRepository @Inject constructor(
     /**
      * Check the friend request status with another user
      */
-    override suspend fun checkFriendRequestStatus(toUserId: String): FriendRequestStatus {
-        return try {
-            val userId = currentUserId ?: return FriendRequestStatus.NONE
+    override suspend fun checkFriendRequestStatus(toUserId: String): FriendRequestStatus = withContext(Dispatchers.IO) {
+        try {
+            val userId = currentUserId ?: return@withContext FriendRequestStatus.NONE
             
             // Check if they're already friends
             val existingFriendship = firestore.collection(USERS_COLLECTION)
@@ -344,7 +353,7 @@ class FirebaseFriendsRepository @Inject constructor(
             
             if (existingFriendship.exists()) {
                 val status = existingFriendship.getString("status")
-                return when (status) {
+                return@withContext when (status) {
                     FriendshipStatus.ACCEPTED.name -> FriendRequestStatus.ACCEPTED
                     FriendshipStatus.BLOCKED.name -> FriendRequestStatus.BLOCKED
                     else -> FriendRequestStatus.NONE
@@ -360,7 +369,7 @@ class FirebaseFriendsRepository @Inject constructor(
                 .await()
             
             if (!sentRequest.isEmpty) {
-                return FriendRequestStatus.SENT
+                return@withContext FriendRequestStatus.SENT
             }
             
             // Check for pending friend request received by current user
@@ -372,7 +381,7 @@ class FirebaseFriendsRepository @Inject constructor(
                 .await()
             
             if (!receivedRequest.isEmpty) {
-                return FriendRequestStatus.RECEIVED
+                return@withContext FriendRequestStatus.RECEIVED
             }
             
             // Check for declined requests
@@ -384,7 +393,7 @@ class FirebaseFriendsRepository @Inject constructor(
                 .await()
             
             if (!declinedRequest.isEmpty) {
-                return FriendRequestStatus.DECLINED
+                return@withContext FriendRequestStatus.DECLINED
             }
             
             FriendRequestStatus.NONE
@@ -397,9 +406,9 @@ class FirebaseFriendsRepository @Inject constructor(
     /**
      * Cancel a friend request sent to another user
      */
-    override suspend fun cancelFriendRequest(toUserId: String): Result<Unit> {
-        return try {
-            val userId = currentUserId ?: return Result.failure(Exception("User not authenticated"))
+    override suspend fun cancelFriendRequest(toUserId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val userId = currentUserId ?: return@withContext Result.failure(Exception("User not authenticated"))
             
             // Find the pending request
             val requestQuery = firestore.collection(FRIEND_REQUESTS_COLLECTION)
@@ -410,7 +419,7 @@ class FirebaseFriendsRepository @Inject constructor(
                 .await()
             
             if (requestQuery.isEmpty) {
-                return Result.failure(Exception("No pending friend request found"))
+                return@withContext Result.failure(Exception("No pending friend request found"))
             }
             
             // Delete the request
@@ -430,9 +439,9 @@ class FirebaseFriendsRepository @Inject constructor(
     /**
      * Accept a friend request
      */
-    override suspend fun acceptFriendRequest(requestId: String): Result<Unit> {
-        return try {
-            val userId = currentUserId ?: return Result.failure(Exception("User not authenticated"))
+    override suspend fun acceptFriendRequest(requestId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val userId = currentUserId ?: return@withContext Result.failure(Exception("User not authenticated"))
             
             firestore.runTransaction { transaction ->
                 // Update request status
@@ -478,8 +487,8 @@ class FirebaseFriendsRepository @Inject constructor(
     /**
      * Decline a friend request
      */
-    override suspend fun declineFriendRequest(requestId: String): Result<Unit> {
-        return try {
+    override suspend fun declineFriendRequest(requestId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
             firestore.collection(FRIEND_REQUESTS_COLLECTION)
                 .document(requestId)
                 .update("status", FriendshipStatus.DECLINED.name)
@@ -495,9 +504,9 @@ class FirebaseFriendsRepository @Inject constructor(
     /**
      * Remove a friend
      */
-    override suspend fun removeFriend(friendId: String): Result<Unit> {
-        return try {
-            val userId = currentUserId ?: return Result.failure(Exception("User not authenticated"))
+    override suspend fun removeFriend(friendId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val userId = currentUserId ?: return@withContext Result.failure(Exception("User not authenticated"))
             
             firestore.runTransaction { transaction ->
                 // Remove from current user's friends
@@ -525,9 +534,9 @@ class FirebaseFriendsRepository @Inject constructor(
     /**
      * Block a friend
      */
-    override suspend fun blockFriend(friendId: String): Result<Unit> {
-        return try {
-            val userId = currentUserId ?: return Result.failure(Exception("User not authenticated"))
+    override suspend fun blockFriend(friendId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val userId = currentUserId ?: return@withContext Result.failure(Exception("User not authenticated"))
             
             // Update friendship status to blocked
             firestore.collection(USERS_COLLECTION)
@@ -547,9 +556,9 @@ class FirebaseFriendsRepository @Inject constructor(
     /**
      * Update location sharing status
      */
-    override suspend fun updateLocationSharing(enabled: Boolean): Result<Unit> {
-        return try {
-            val userId = currentUserId ?: return Result.failure(Exception("User not authenticated"))
+    override suspend fun updateLocationSharing(enabled: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val userId = currentUserId ?: return@withContext Result.failure(Exception("User not authenticated"))
             
             firestore.collection(USERS_COLLECTION)
                 .document(userId)
@@ -569,9 +578,9 @@ class FirebaseFriendsRepository @Inject constructor(
     /**
      * Update privacy settings
      */
-    override suspend fun updatePrivacySettings(preferences: FriendPreferences): Result<Unit> {
-        return try {
-            val userId = currentUserId ?: return Result.failure(Exception("User not authenticated"))
+    override suspend fun updatePrivacySettings(preferences: FriendPreferences): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val userId = currentUserId ?: return@withContext Result.failure(Exception("User not authenticated"))
             
             firestore.collection(USERS_COLLECTION)
                 .document(userId)
@@ -591,9 +600,9 @@ class FirebaseFriendsRepository @Inject constructor(
     /**
      * Update online status
      */
-    override suspend fun updateOnlineStatus(isOnline: Boolean): Result<Unit> {
-        return try {
-            val userId = currentUserId ?: return Result.failure(Exception("User not authenticated"))
+    override suspend fun updateOnlineStatus(isOnline: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val userId = currentUserId ?: return@withContext Result.failure(Exception("User not authenticated"))
             
             val updates = mutableMapOf<String, Any>(
                 "status.isOnline" to isOnline,
@@ -609,6 +618,58 @@ class FirebaseFriendsRepository @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             Timber.e(e, "Error updating online status")
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * Start location sharing
+     */
+    override suspend fun startLocationSharing(): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val userId = currentUserId ?: return@withContext Result.failure(Exception("User not authenticated"))
+            
+            val updates = mapOf(
+                "status.isLocationSharingEnabled" to true,
+                "status.locationSharingStartTime" to System.currentTimeMillis(),
+                "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            )
+            
+            firestore.collection(USERS_COLLECTION)
+                .document(userId)
+                .update(updates)
+                .await()
+            
+            Timber.d("Location sharing started for user: $userId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Error starting location sharing")
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * Stop location sharing
+     */
+    override suspend fun stopLocationSharing(): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val userId = currentUserId ?: return@withContext Result.failure(Exception("User not authenticated"))
+            
+            val updates = mapOf(
+                "status.isLocationSharingEnabled" to false,
+                "status.locationSharingStartTime" to null,
+                "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+            )
+            
+            firestore.collection(USERS_COLLECTION)
+                .document(userId)
+                .update(updates)
+                .await()
+            
+            Timber.d("Location sharing stopped for user: $userId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Error stopping location sharing")
             Result.failure(e)
         }
     }
@@ -648,12 +709,31 @@ class FirebaseFriendsRepository @Inject constructor(
             Result.failure(e)
         }
     }
+    
+    /**
+     * Search for friends globally using Firestore query with pagination
+     */
+    override suspend fun searchFriends(query: String): Flow<androidx.paging.PagingData<Friend>> {
+        return androidx.paging.Pager(
+            config = androidx.paging.PagingConfig(
+                pageSize = 30,
+                prefetchDistance = 2,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                FriendSearchPagingSource(
+                    firestore = firestore,
+                    query = query.lowercase().trim()
+                )
+            }
+        ).flow
+    }
 
     /**
      * Helper function to get friend profile data
      */
-    private suspend fun getFriendProfile(friendUserId: String): Friend? {
-        return try {
+    private suspend fun getFriendProfile(friendUserId: String): Friend? = withContext(Dispatchers.IO) {
+        try {
             val doc = firestore.collection(USERS_COLLECTION)
                 .document(friendUserId)
                 .get()

@@ -10,20 +10,20 @@ import com.locationsharing.app.domain.model.UserDiscoveryResult
 import com.locationsharing.app.domain.repository.ContactImportManager
 import com.locationsharing.app.domain.repository.ContactImportProgress
 import com.locationsharing.app.domain.repository.UserDiscoveryService
-import dagger.hilt.android.lifecycle.HiltViewModel
+// import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
+// import javax.inject.Inject
 
 /**
  * Enhanced ViewModel for the Invite Friends screen
  * Manages contact import, user discovery, and friend invitation functionality
  */
-@HiltViewModel
-class InviteFriendsViewModel @Inject constructor(
+// @HiltViewModel
+class InviteFriendsViewModel constructor(
     private val contactImportManager: ContactImportManager,
     private val userDiscoveryService: UserDiscoveryService,
     private val friendsRepository: com.locationsharing.app.data.friends.FriendsRepository

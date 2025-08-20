@@ -74,15 +74,16 @@ class FriendsNearbyPanelAccessibilityTest {
         composeTestRule.setContent {
             FFinderTheme {
                 FriendsToggleFAB(
-                    isOpen = false,
+                    isPanelOpen = false,
+                    friendCount = 0,
                     onClick = { }
                 )
             }
         }
 
-        // Verify FAB has proper accessibility role and description
+        // Verify FAB has enhanced accessibility role and description
         composeTestRule
-            .onNodeWithContentDescription("Open friends nearby panel")
+            .onNodeWithContentDescription("Open nearby friends panel. No friends are currently sharing their location.")
             .assertIsDisplayed()
             .assertHasClickAction()
             .assert(
@@ -98,15 +99,16 @@ class FriendsNearbyPanelAccessibilityTest {
         composeTestRule.setContent {
             FFinderTheme {
                 FriendsToggleFAB(
-                    isOpen = true,
+                    isPanelOpen = true,
+                    friendCount = 2,
                     onClick = { }
                 )
             }
         }
 
-        // Verify FAB shows close state accessibility description
+        // Verify FAB shows enhanced close state accessibility description
         composeTestRule
-            .onNodeWithContentDescription("Close friends nearby panel")
+            .onNodeWithContentDescription("Close friends nearby panel. Panel is currently open.")
             .assertIsDisplayed()
             .assertHasClickAction()
     }
@@ -517,6 +519,178 @@ class FriendsNearbyPanelAccessibilityTest {
         // Should announce filtered count
         composeTestRule
             .onNodeWithContentDescription("Friends list with 1 friends")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun friendsToggleFAB_hasEnhancedAccessibilityWithFriendCount() {
+        composeTestRule.setContent {
+            FFinderTheme {
+                FriendsToggleFAB(
+                    isPanelOpen = false,
+                    friendCount = 3,
+                    onClick = { }
+                )
+            }
+        }
+
+        // Verify FAB announces friend count in accessibility description
+        composeTestRule
+            .onNodeWithContentDescription("Open nearby friends panel. 3 friends are available nearby.")
+            .assertIsDisplayed()
+            .assertHasClickAction()
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.Role,
+                    androidx.compose.ui.semantics.Role.Button
+                )
+            )
+    }
+
+    @Test
+    fun friendsToggleFAB_hasEnhancedAccessibilityWithSingleFriend() {
+        composeTestRule.setContent {
+            FFinderTheme {
+                FriendsToggleFAB(
+                    isPanelOpen = false,
+                    friendCount = 1,
+                    onClick = { }
+                )
+            }
+        }
+
+        // Verify FAB uses singular form for single friend
+        composeTestRule
+            .onNodeWithContentDescription("Open nearby friends panel. 1 friend is available nearby.")
+            .assertIsDisplayed()
+            .assertHasClickAction()
+    }
+
+    @Test
+    fun friendsToggleFAB_hasStateDescriptionForScreenReaders() {
+        composeTestRule.setContent {
+            FFinderTheme {
+                FriendsToggleFAB(
+                    isPanelOpen = false,
+                    friendCount = 2,
+                    onClick = { }
+                )
+            }
+        }
+
+        // Verify FAB has state description for screen readers
+        composeTestRule
+            .onNodeWithContentDescription("Open nearby friends panel. 2 friends are available nearby.")
+            .assertIsDisplayed()
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    "2 nearby"
+                )
+            )
+    }
+
+    @Test
+    fun friendsToggleFAB_hasLiveRegionForStateChanges() {
+        composeTestRule.setContent {
+            FFinderTheme {
+                FriendsToggleFAB(
+                    isPanelOpen = true,
+                    friendCount = 1,
+                    onClick = { }
+                )
+            }
+        }
+
+        // Verify FAB has live region for announcing state changes
+        composeTestRule
+            .onNodeWithContentDescription("Close friends nearby panel. Panel is currently open.")
+            .assertIsDisplayed()
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.LiveRegion,
+                    androidx.compose.ui.semantics.LiveRegionMode.Polite
+                )
+            )
+    }
+
+    @Test
+    fun friendsPanelScaffold_hasEnhancedAccessibilityLabelsWithState() {
+        composeTestRule.setContent {
+            FFinderTheme {
+                FriendsPanelScaffold(
+                    uiState = NearbyUiState(
+                        isPanelOpen = true,
+                        isLoading = false,
+                        friends = sampleFriends
+                    ),
+                    onEvent = { }
+                ) {
+                    // Mock map content
+                }
+            }
+        }
+
+        // Verify scaffold has enhanced accessibility labels with friend count
+        composeTestRule
+            .onNodeWithContentDescription("Map screen with friends panel")
+            .assertIsDisplayed()
+
+        composeTestRule
+            .onNodeWithContentDescription("Friends nearby panel, 3 friends available")
+            .assertIsDisplayed()
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.LiveRegion,
+                    androidx.compose.ui.semantics.LiveRegionMode.Polite
+                )
+            )
+    }
+
+    @Test
+    fun friendsPanelScaffold_announcesLoadingState() {
+        composeTestRule.setContent {
+            FFinderTheme {
+                FriendsPanelScaffold(
+                    uiState = NearbyUiState(
+                        isPanelOpen = true,
+                        isLoading = true,
+                        friends = emptyList()
+                    ),
+                    onEvent = { }
+                ) {
+                    // Mock map content
+                }
+            }
+        }
+
+        // Verify scaffold announces loading state
+        composeTestRule
+            .onNodeWithContentDescription("Friends nearby panel, loading friends")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun friendsPanelScaffold_announcesErrorState() {
+        composeTestRule.setContent {
+            FFinderTheme {
+                FriendsPanelScaffold(
+                    uiState = NearbyUiState(
+                        isPanelOpen = true,
+                        isLoading = false,
+                        friends = emptyList(),
+                        error = "Network error"
+                    ),
+                    onEvent = { }
+                ) {
+                    // Mock map content
+                }
+            }
+        }
+
+        // Verify scaffold announces error state
+        composeTestRule
+            .onNodeWithContentDescription("Friends nearby panel, error occurred")
             .assertIsDisplayed()
     }
 }

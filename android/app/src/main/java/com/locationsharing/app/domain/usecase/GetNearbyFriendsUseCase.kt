@@ -1,6 +1,8 @@
 package com.locationsharing.app.domain.usecase
 
 import android.location.Location
+import android.util.Log
+import com.locationsharing.app.BuildConfig
 import com.locationsharing.app.data.friends.FriendsRepository
 import com.locationsharing.app.data.location.EnhancedLocationService
 import com.locationsharing.app.domain.model.NearbyFriend
@@ -43,6 +45,19 @@ class GetNearbyFriendsUseCase @Inject constructor(
         private const val TIME_THRESHOLD_MS = 10_000L // Recalculate every 10 seconds
         private const val DISTANCE_TOLERANCE_METERS = 1.0 // < 1m tolerance for sorting
         private const val MAX_CACHED_FRIENDS = 1000 // Prevent memory leaks with large friend lists
+        
+        // Geo-filtering: 10km radius for nearby friends
+        private const val GEO_FILTER_RADIUS_METERS = 10_000.0 // 10km radius
+        
+        // Smart ranking weights
+        private const val PROXIMITY_WEIGHT = 0.5f
+        private const val TIME_SINCE_SEEN_WEIGHT = 0.3f
+        private const val STATUS_WEIGHT = 0.2f
+        
+        // Proximity buckets for categorization
+        private const val VERY_CLOSE_THRESHOLD = 300.0 // < 300m = Very Close
+        private const val NEARBY_THRESHOLD = 2000.0 // 300m-2km = Nearby
+        private const val IN_TOWN_THRESHOLD = 10000.0 // 2-10km = In Town
     }
     
     private var lastUserLocation: Location? = null
@@ -70,11 +85,17 @@ class GetNearbyFriendsUseCase @Inject constructor(
             if (shouldRecalculate) {
                 var result: List<NearbyFriend> = emptyList()
                 performanceMonitor.monitorDistanceCalculation(friends.size) {
-                    result = calculateNearbyFriends(friends, userLocation)
+                    result = NearbyPanelLogger.measureDistanceCalculation(
+                        "calculateNearbyFriends",
+                        friends.size
+                    ) {
+                        calculateNearbyFriends(friends, userLocation)
+                    }
                     // Cache results to prevent unnecessary recalculations
                     cachedNearbyFriends = result
                     lastFriendsHash = currentFriendsHash
                 }
+                NearbyPanelLogger.logDistanceUpdate(result.size)
                 result
             } else {
                 // Return cached results if no significant changes
@@ -82,8 +103,14 @@ class GetNearbyFriendsUseCase @Inject constructor(
                     // Fallback calculation if cache is empty
                     var result: List<NearbyFriend> = emptyList()
                     performanceMonitor.monitorDistanceCalculation(friends.size) {
-                        result = calculateNearbyFriends(friends, userLocation)
+                        result = NearbyPanelLogger.measureDistanceCalculation(
+                            "calculateNearbyFriends_fallback",
+                            friends.size
+                        ) {
+                            calculateNearbyFriends(friends, userLocation)
+                        }
                     }
+                    NearbyPanelLogger.logDistanceUpdate(result.size)
                     result
                 }
             }
@@ -164,9 +191,11 @@ class GetNearbyFriendsUseCase @Inject constructor(
     ): List<NearbyFriend> {
         
         if (userLocation == null) {
-            if (BuildConfig.DEBUG) {
-                Log.d(TAG, "User location unavailable, returning friends without distances")
-            }
+            NearbyPanelLogger.logWarning(
+                "calculateNearbyFriends",
+                "User location unavailable, returning friends without distances",
+                mapOf("friendCount" to friends.size)
+            )
             return friends.take(MAX_CACHED_FRIENDS).mapNotNull { friend ->
                 NearbyFriend.fromFriend(friend, null)
             }
@@ -178,9 +207,14 @@ class GetNearbyFriendsUseCase @Inject constructor(
         
         // Performance optimization: Limit processing for very large friend lists
         val friendsToProcess = if (friends.size > MAX_CACHED_FRIENDS) {
-            if (BuildConfig.DEBUG) {
-                Log.d(TAG, "Large friend list detected (${friends.size}), limiting to $MAX_CACHED_FRIENDS for performance")
-            }
+            NearbyPanelLogger.logWarning(
+                "calculateNearbyFriends",
+                "Large friend list detected, limiting for performance",
+                mapOf(
+                    "totalFriends" to friends.size,
+                    "processedFriends" to MAX_CACHED_FRIENDS
+                )
+            )
             friends.take(MAX_CACHED_FRIENDS)
         } else {
             friends
@@ -199,32 +233,64 @@ class GetNearbyFriendsUseCase @Inject constructor(
             }
         }
         
-        // Sort by distance (nearest first) with tolerance handling
-        val sortedFriends = nearbyFriends.sortedWith { friend1, friend2 ->
-            val distance1 = friend1.distance
-            val distance2 = friend2.distance
-            
-            // Apply tolerance - if distances are within 1m, consider them equal
-            when {
-                kotlin.math.abs(distance1 - distance2) < DISTANCE_TOLERANCE_METERS -> 0
-                distance1 < distance2 -> -1
-                else -> 1
-            }
+        // Apply geo-filtering: only include friends within 10km radius
+        val geoFilteredFriends = nearbyFriends.filter { friend ->
+            friend.distance <= GEO_FILTER_RADIUS_METERS
         }
         
-        // Log distance calculation results
-        if (BuildConfig.DEBUG) {
-            Log.d(TAG, "Distance updated for ${sortedFriends.size} friends (processed ${friendsToProcess.size} of ${friends.size})")
-            sortedFriends.take(3).forEach { friend ->
-                Log.d(TAG, "  ${friend.displayName}: ${friend.formattedDistance}")
-            }
+        if (BuildConfig.DEBUG && geoFilteredFriends.size != nearbyFriends.size) {
+            NearbyPanelLogger.logWarning(
+                "geo_filtering",
+                "Applied 10km geo-filter",
+                mapOf(
+                    "beforeFilter" to nearbyFriends.size,
+                    "afterFilter" to geoFilteredFriends.size,
+                    "filtered" to (nearbyFriends.size - geoFilteredFriends.size)
+                )
+            )
+        }
+        
+        // Sort by smart ranking score (ascending = higher priority)
+        val sortedFriends = geoFilteredFriends.sortedBy { it.smartRankingScore }
+        
+        // Log proximity bucket distribution
+        if (BuildConfig.DEBUG && sortedFriends.isNotEmpty()) {
+            val veryClose = sortedFriends.count { it.proximityBucket == NearbyFriend.ProximityBucket.VERY_CLOSE }
+            val nearby = sortedFriends.count { it.proximityBucket == NearbyFriend.ProximityBucket.NEARBY }
+            val inTown = sortedFriends.count { it.proximityBucket == NearbyFriend.ProximityBucket.IN_TOWN }
+            
+            NearbyPanelLogger.logWarning(
+                "proximity_buckets",
+                "Friend proximity distribution",
+                mapOf(
+                    "veryClose" to veryClose,
+                    "nearby" to nearby,
+                    "inTown" to inTown,
+                    "total" to sortedFriends.size
+                )
+            )
+        }
+        
+        // Log distance calculation results with detailed friend information
+        NearbyPanelLogger.logFriendListState(sortedFriends.take(5))
+        
+        if (BuildConfig.DEBUG && sortedFriends.size != friendsToProcess.size) {
+            NearbyPanelLogger.logWarning(
+                "calculateNearbyFriends",
+                "Friends filtered during geo-filtering and processing",
+                mapOf(
+                    "inputFriends" to friendsToProcess.size,
+                    "outputFriends" to sortedFriends.size,
+                    "geoFiltered" to (friendsToProcess.size - geoFilteredFriends.size)
+                )
+            )
         }
         
         return sortedFriends
     }
     
     /**
-     * Check if there's a significant change in distances between two lists
+     * Check if there's a significant change in smart ranking or distances between two lists
      */
     private fun hasSignificantDistanceChange(
         oldList: List<NearbyFriend>,
@@ -232,10 +298,12 @@ class GetNearbyFriendsUseCase @Inject constructor(
     ): Boolean {
         if (oldList.size != newList.size) return false
         
-        // Check if any friend's distance has changed significantly
+        // Check if any friend's distance or smart ranking has changed significantly
         return oldList.zip(newList).any { (old, new) ->
-            old.id == new.id && 
-            kotlin.math.abs(old.distance - new.distance) >= DISTANCE_TOLERANCE_METERS
+            old.id == new.id && (
+                kotlin.math.abs(old.distance - new.distance) >= DISTANCE_TOLERANCE_METERS ||
+                kotlin.math.abs(old.smartRankingScore - new.smartRankingScore) >= 0.01f // 1% change threshold
+            )
         }
     }
     

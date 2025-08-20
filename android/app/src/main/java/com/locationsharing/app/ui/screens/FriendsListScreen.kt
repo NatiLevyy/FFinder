@@ -79,7 +79,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.locationsharing.app.data.friends.Friend
@@ -99,7 +99,7 @@ fun FriendsListScreen(
     onFriendClick: (Friend) -> Unit,
     onInviteFriendsClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: FriendsListViewModel = hiltViewModel()
+    viewModel: FriendsListViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

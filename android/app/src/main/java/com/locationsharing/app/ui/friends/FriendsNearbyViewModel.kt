@@ -12,23 +12,25 @@ import com.locationsharing.app.BuildConfig
 import com.locationsharing.app.data.friends.FriendsRepository
 import com.locationsharing.app.domain.model.NearbyFriend
 import com.locationsharing.app.domain.usecase.GetNearbyFriendsUseCase
-import dagger.hilt.android.lifecycle.HiltViewModel
+import com.locationsharing.app.ui.friends.logging.NearbyPanelLogger
+// import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
+// import javax.inject.Inject
 
 /**
  * ViewModel for the Friends Nearby Panel feature.
  * Handles all nearby panel interactions and state management.
  * Requirements: 6.1, 6.3, 6.4
  */
-@HiltViewModel
-class FriendsNearbyViewModel @Inject constructor(
-    private val getNearbyFriendsUseCase: GetNearbyFriendsUseCase,
+// @HiltViewModel
+class FriendsNearbyViewModel constructor(
+    // Temporarily removed getNearbyFriendsUseCase to prevent EnhancedLocationService from starting
+    // private val getNearbyFriendsUseCase: GetNearbyFriendsUseCase,
     private val friendsRepository: FriendsRepository
 ) : ViewModel() {
     
@@ -45,8 +47,11 @@ class FriendsNearbyViewModel @Inject constructor(
     /**
      * Observe nearby friends updates with reactive distance calculations
      * Requirements: 6.1, 6.3, 6.4
+     * TEMPORARILY DISABLED to prevent EnhancedLocationService from starting
      */
     private fun observeNearbyFriends() {
+        // Temporarily disabled to prevent location service conflicts
+        /*
         viewModelScope.launch {
             getNearbyFriendsUseCase().collect { nearbyFriends ->
                 _uiState.value = _uiState.value.copy(
@@ -55,11 +60,22 @@ class FriendsNearbyViewModel @Inject constructor(
                     error = null
                 )
                 
-                if (BuildConfig.DEBUG) {
-                    Timber.d("📍 NearbyPanel: Friends updated: ${nearbyFriends.size} friends")
-                }
+                NearbyPanelLogger.logFriendListState(nearbyFriends)
+                NearbyPanelLogger.logRepositoryOperation(
+                    "observeNearbyFriends",
+                    true,
+                    null
+                )
             }
         }
+        */
+        
+        // Set initial state with empty friends list
+        _uiState.value = _uiState.value.copy(
+            friends = emptyList(),
+            isLoading = false,
+            error = null
+        )
     }
     
     /**
@@ -82,6 +98,7 @@ class FriendsNearbyViewModel @Inject constructor(
             is NearbyPanelEvent.DismissSnackbar -> dismissSnackbar()
             is NearbyPanelEvent.UpdateScrollPosition -> updateScrollPosition(event.position)
             is NearbyPanelEvent.PreserveState -> preserveState()
+            is NearbyPanelEvent.InviteFriends -> handleInviteFriends()
         }
     }
     
@@ -90,10 +107,11 @@ class FriendsNearbyViewModel @Inject constructor(
      * Requirement 1.2: When the user taps the friends button THEN the system SHALL toggle a Modal Navigation Drawer
      */
     private fun togglePanel() {
+        val newState = !_uiState.value.isPanelOpen
         _uiState.value = _uiState.value.copy(
-            isPanelOpen = !_uiState.value.isPanelOpen
+            isPanelOpen = newState
         )
-        Timber.d("📍 NearbyPanel: Panel toggled - open: ${_uiState.value.isPanelOpen}")
+        NearbyPanelLogger.logPanelStateChange(newState, _uiState.value.friends.size)
     }
     
     /**
@@ -101,8 +119,9 @@ class FriendsNearbyViewModel @Inject constructor(
      * Requirement 3.2: When the user types in the search bar THEN the system SHALL filter the friends list by display name in real-time
      */
     private fun updateSearchQuery(query: String) {
+        val filteredCount = _uiState.value.copy(searchQuery = query).filteredFriends.size
         _uiState.value = _uiState.value.copy(searchQuery = query)
-        Timber.d("📍 NearbyPanel: Search query updated: '$query'")
+        NearbyPanelLogger.logSearchQuery(query, filteredCount)
     }
     
     /**
@@ -112,18 +131,29 @@ class FriendsNearbyViewModel @Inject constructor(
     private fun handleFriendClick(friendId: String) {
         viewModelScope.launch {
             try {
-                Timber.d("📍 NearbyPanel: Friend clicked: $friendId")
-                
                 val friend = _uiState.value.friends.find { it.id == friendId }
                 if (friend != null) {
                     _uiState.value = _uiState.value.copy(selectedFriendId = friendId)
-                    Timber.d("📍 NearbyPanel: Friend selected for bottom sheet: ${friend.displayName}")
+                    
+                    NearbyPanelLogger.logFriendInteraction(
+                        "FRIEND_SELECTED",
+                        friendId,
+                        friend.displayName
+                    )
                 } else {
-                    Timber.w("📍 NearbyPanel: Friend not found: $friendId")
+                    NearbyPanelLogger.logError(
+                        "handleFriendClick",
+                        RuntimeException("Friend not found"),
+                        mapOf("friendId" to friendId)
+                    )
                     _uiState.value = _uiState.value.copy(error = "Friend not found")
                 }
             } catch (e: Exception) {
-                Timber.e(e, "📍 NearbyPanel: Error handling friend click: $friendId")
+                NearbyPanelLogger.logError(
+                    "handleFriendClick",
+                    e,
+                    mapOf("friendId" to friendId)
+                )
                 _uiState.value = _uiState.value.copy(error = "Error selecting friend: ${e.message}")
             }
         }
@@ -171,12 +201,16 @@ class FriendsNearbyViewModel @Inject constructor(
     private fun handleNavigate(friendId: String) {
         viewModelScope.launch {
             try {
-                Timber.d("📍 NearbyPanel: Starting navigation to friend: $friendId")
-                
                 val friend = _uiState.value.friends.find { it.id == friendId }
                 if (friend == null) {
-                    Timber.w("📍 NearbyPanel: Friend not found for navigation: $friendId")
-                    _uiState.value = _uiState.value.copy(error = "Friend not found")
+                    val errorMsg = "Friend not found"
+                    _uiState.value = _uiState.value.copy(error = errorMsg)
+                    
+                    NearbyPanelLogger.logError(
+                        "handleNavigate",
+                        RuntimeException(errorMsg),
+                        mapOf("friendId" to friendId)
+                    )
                     return@launch
                 }
                 
@@ -187,10 +221,18 @@ class FriendsNearbyViewModel @Inject constructor(
                     location = friend.latLng
                 )
                 
-                Timber.d("📍 NearbyPanel: Navigation intent prepared for ${friend.displayName}")
+                NearbyPanelLogger.logFriendInteraction(
+                    "NAVIGATE_TO_FRIEND",
+                    friendId,
+                    friend.displayName
+                )
                 
             } catch (e: Exception) {
-                Timber.e(e, "📍 NearbyPanel: Error preparing navigation for friend: $friendId")
+                NearbyPanelLogger.logError(
+                    "handleNavigate",
+                    e,
+                    mapOf("friendId" to friendId)
+                )
                 _uiState.value = _uiState.value.copy(error = "Failed to prepare navigation: ${e.message}")
             }
         }
@@ -203,27 +245,48 @@ class FriendsNearbyViewModel @Inject constructor(
     private fun handlePing(friendId: String) {
         viewModelScope.launch {
             try {
-                Timber.d("📍 NearbyPanel: Sending ping to friend: $friendId")
-                
                 val friend = _uiState.value.friends.find { it.id == friendId }
                 if (friend == null) {
-                    Timber.w("📍 NearbyPanel: Friend not found for ping: $friendId")
-                    _uiState.value = _uiState.value.copy(error = "Friend not found")
+                    val errorMsg = "Friend not found"
+                    _uiState.value = _uiState.value.copy(error = errorMsg)
+                    
+                    NearbyPanelLogger.logError(
+                        "handlePing",
+                        RuntimeException(errorMsg),
+                        mapOf("friendId" to friendId)
+                    )
                     return@launch
                 }
                 
                 val result = friendsRepository.sendPing(friendId)
                 if (result.isSuccess) {
                     _feedbackMessage.value = "Ping sent to ${friend.displayName}! 📍"
-                    Timber.d("📍 NearbyPanel: Ping sent successfully to ${friend.displayName}")
+                    
+                    NearbyPanelLogger.logFriendInteraction(
+                        "PING_FRIEND",
+                        friendId,
+                        friend.displayName
+                    )
                 } else {
                     val error = result.exceptionOrNull()?.message ?: "Unknown error"
-                    Timber.e("📍 NearbyPanel: Failed to send ping to ${friend.displayName}: $error")
                     _uiState.value = _uiState.value.copy(error = "Failed to send ping: $error")
+                    
+                    NearbyPanelLogger.logError(
+                        "handlePing",
+                        RuntimeException("Failed to send ping: $error"),
+                        mapOf(
+                            "friendId" to friendId,
+                            "friendName" to friend.displayName
+                        )
+                    )
                 }
                 
             } catch (e: Exception) {
-                Timber.e(e, "📍 NearbyPanel: Error sending ping to friend: $friendId")
+                NearbyPanelLogger.logError(
+                    "handlePing",
+                    e,
+                    mapOf("friendId" to friendId)
+                )
                 _uiState.value = _uiState.value.copy(error = "Failed to send ping: ${e.message}")
             }
         }
@@ -236,12 +299,16 @@ class FriendsNearbyViewModel @Inject constructor(
     private fun handleStopSharing(friendId: String) {
         viewModelScope.launch {
             try {
-                Timber.d("📍 NearbyPanel: Stopping location sharing with friend: $friendId")
-                
                 val friend = _uiState.value.friends.find { it.id == friendId }
                 if (friend == null) {
-                    Timber.w("📍 NearbyPanel: Friend not found for stop sharing: $friendId")
-                    _uiState.value = _uiState.value.copy(error = "Friend not found")
+                    val errorMsg = "Friend not found"
+                    _uiState.value = _uiState.value.copy(error = errorMsg)
+                    
+                    NearbyPanelLogger.logError(
+                        "handleStopSharing",
+                        RuntimeException(errorMsg),
+                        mapOf("friendId" to friendId)
+                    )
                     return@launch
                 }
                 
@@ -252,15 +319,32 @@ class FriendsNearbyViewModel @Inject constructor(
                     if (_uiState.value.selectedFriendId == friendId) {
                         _uiState.value = _uiState.value.copy(selectedFriendId = null)
                     }
-                    Timber.d("📍 NearbyPanel: Successfully stopped location sharing with ${friend.displayName}")
+                    
+                    NearbyPanelLogger.logFriendInteraction(
+                        "STOP_SHARING_LOCATION",
+                        friendId,
+                        friend.displayName
+                    )
                 } else {
                     val error = result.exceptionOrNull()?.message ?: "Unknown error"
-                    Timber.e("📍 NearbyPanel: Failed to stop location sharing with ${friend.displayName}: $error")
                     _uiState.value = _uiState.value.copy(error = "Failed to stop location sharing: $error")
+                    
+                    NearbyPanelLogger.logError(
+                        "handleStopSharing",
+                        RuntimeException("Failed to stop location sharing: $error"),
+                        mapOf(
+                            "friendId" to friendId,
+                            "friendName" to friend.displayName
+                        )
+                    )
                 }
                 
             } catch (e: Exception) {
-                Timber.e(e, "📍 NearbyPanel: Error stopping location sharing with friend: $friendId")
+                NearbyPanelLogger.logError(
+                    "handleStopSharing",
+                    e,
+                    mapOf("friendId" to friendId)
+                )
                 _uiState.value = _uiState.value.copy(error = "Failed to stop location sharing: ${e.message}")
             }
         }
@@ -273,12 +357,16 @@ class FriendsNearbyViewModel @Inject constructor(
     private fun handleMessage(friendId: String) {
         viewModelScope.launch {
             try {
-                Timber.d("📍 NearbyPanel: Creating message intent for friend: $friendId")
-                
                 val friend = _uiState.value.friends.find { it.id == friendId }
                 if (friend == null) {
-                    Timber.w("📍 NearbyPanel: Friend not found for messaging: $friendId")
-                    _uiState.value = _uiState.value.copy(error = "Friend not found")
+                    val errorMsg = "Friend not found"
+                    _uiState.value = _uiState.value.copy(error = errorMsg)
+                    
+                    NearbyPanelLogger.logError(
+                        "handleMessage",
+                        RuntimeException(errorMsg),
+                        mapOf("friendId" to friendId)
+                    )
                     return@launch
                 }
                 
@@ -289,11 +377,45 @@ class FriendsNearbyViewModel @Inject constructor(
                     messageText = "Hey ${friend.displayName}! I can see you're nearby on FFinder. Want to meet up? 📍"
                 )
                 
-                Timber.d("📍 NearbyPanel: Message intent prepared for ${friend.displayName}")
+                NearbyPanelLogger.logFriendInteraction(
+                    "MESSAGE_FRIEND",
+                    friendId,
+                    friend.displayName
+                )
                 
             } catch (e: Exception) {
-                Timber.e(e, "📍 NearbyPanel: Error preparing message for friend: $friendId")
+                NearbyPanelLogger.logError(
+                    "handleMessage",
+                    e,
+                    mapOf("friendId" to friendId)
+                )
                 _uiState.value = _uiState.value.copy(error = "Failed to prepare message: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Handle invite friends action
+     * Opens the system share intent to invite friends to use FFinder
+     */
+    private fun handleInviteFriends() {
+        viewModelScope.launch {
+            try {
+                _feedbackMessage.value = "Opening invite friends..."
+                
+                NearbyPanelLogger.logFriendInteraction(
+                    "INVITE_FRIENDS",
+                    "system",
+                    "Invite Friends Action"
+                )
+                
+            } catch (e: Exception) {
+                NearbyPanelLogger.logError(
+                    "handleInviteFriends",
+                    e,
+                    emptyMap()
+                )
+                _uiState.value = _uiState.value.copy(error = "Failed to open invite: ${e.message}")
             }
         }
     }
@@ -314,9 +436,17 @@ class FriendsNearbyViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true, error = null)
                 // The GetNearbyFriendsUseCase will automatically refresh when underlying data changes
-                Timber.d("📍 NearbyPanel: Friends refresh requested")
+                
+                NearbyPanelLogger.logRepositoryOperation(
+                    "refreshFriends",
+                    true,
+                    null
+                )
             } catch (e: Exception) {
-                Timber.e(e, "📍 NearbyPanel: Error refreshing friends")
+                NearbyPanelLogger.logError(
+                    "refreshFriends",
+                    e
+                )
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = "Failed to refresh friends: ${e.message}"

@@ -37,10 +37,11 @@ fun FriendsToggleFABIntegrationExample() {
             // Map content would go here
         }
         
-        // Friends Toggle FAB positioned in top-right corner
+        // Enhanced Friends Toggle FAB positioned in top-right corner
         FriendsToggleFAB(
-            isOpen = isPanelOpen,
             onClick = { isPanelOpen = !isPanelOpen },
+            friendCount = 3, // Example friend count for demonstration
+            isExpanded = !isPanelOpen, // Collapse when panel is open
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(16.dp) // 16dp padding as specified in requirements

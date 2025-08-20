@@ -1,0 +1,91 @@
+FFinder App Crash Log - Start Live Sharing
+===========================================
+Date: August 19, 2025
+Time: 08:21:41-08:21:43
+Device: Pixel_5 (AVD) - Android API 34
+App: com.locationsharing.app.debug
+Trigger: Tapping 'Start Live Sharing' button
+
+CRASH SEQUENCE:
+==============
+
+1. INPUT TIMEOUT (08:21:41.794):
+   - Window com.locationsharing.app.debug/com.locationsharing.app.MainActivity is unresponsive
+   - Waited 5000ms for FocusEvent(hasFocus=false)
+   - Input dispatching timed out
+
+2. ANR DETECTED (08:21:41.809):
+   - ANR in Window{79a1475 u0 com.locationsharing.app.debug/com.locationsharing.app.MainActivity}
+   - Reason: Input dispatching timed out
+
+3. APP CRASH (08:21:41.906):
+   - ActivityManager: Crashing app skipping ANR
+   - Process killed due to unresponsiveness
+
+4. TOMBSTONE CREATED (08:21:42.927):
+   - tombstoned received crash request for pid 7960
+
+5. PROCESS KILLED (08:21:43.825):
+   - ActivityManager: Killing 7960:com.locationsharing.app.debug/u0a217 (adj 900): crash
+
+6. EMOJI COMPAT ERROR (08:21:43.926):
+   - java.lang.IllegalStateException: EmojiCompat is not initialized
+   - Please call EmojiCompat.init() first
+
+ROOT CAUSE ANALYSIS:
+===================
+
+The crash appears to be caused by:
+1. Main thread blocking during location sharing initialization
+2. EmojiCompat not being properly initialized
+3. Potential deadlock or infinite loop in the location sharing flow
+
+SUSPECTED CRASH LOCATION:
+========================
+
+Based on code analysis, the crash likely occurs in one of these locations:
+
+1. FriendsRepository.startLocationSharing() (line 623)
+   - Firebase Firestore operations on main thread
+   - Authentication check: currentUserId access
+   - Firestore document update operations
+
+2. LocationSharingService.startLocationSharing() (line 58)
+   - Calls friendsRepository.startLocationSharing()
+   - State updates that might block UI thread
+
+3. MapScreenViewModel.handleStartLocationSharing()
+   - Coroutine scope issues
+   - State management blocking main thread
+
+NEXT STEPS:
+===========
+1. Add proper coroutine dispatchers for Firebase operations
+2. Initialize EmojiCompat in Application class
+3. Ensure all heavy operations are off main thread
+4. Add timeout handling for Firebase operations
+5. Add proper error handling and logging
+
+FULL LOG DETAILS:
+================
+08-19 08:21:41.794 W/InputDispatcher(  686): Window 79a1475 com.locationsharing.app.debug/com.locationsharing.app.MainActivity is unresponsive: 79a1475 com.locationsharing.app.debug/com.locationsharing.app.MainActivity is not responding. Waited 5000ms for FocusEvent(hasFocus=false)
+
+08-19 08:21:41.795 W/InputDispatcher(  686): Canceling events for 79a1475 com.locationsharing.app.debug/com.locationsharing.app.MainActivity because it is unresponsive
+
+08-19 08:21:41.809 I/WindowManager(  686): ANR in Window{79a1475 u0 com.locationsharing.app.debug/com.locationsharing.app.MainActivity}. Reason:Input dispatching timed out (79a1475 com.locationsharing.app.debug/com.locationsharing.app.MainActivity is not responding. Waited 5000ms for FocusEvent(hasFocus=false)).
+
+08-19 08:21:41.906 I/ActivityManager(  686): Crashing app skipping ANR: com.android.server.am.ProcessErrorStateRecord@4de5aa9 Input dispatching timed out (79a1475 com.locationsharing.app.debug/com.locationsharing.app.MainActivity is not responding. Waited 5000ms for FocusEvent(hasFocus=false)).
+
+08-19 08:21:42.192 D/ActivityManager(  686): Completed ANR of com.locationsharing.app.debug in 81ms, latency 5ms
+
+08-19 08:21:42.927 I/tombstoned(  294): received crash request for pid 7960
+
+08-19 08:21:43.824 D/CoreBackPreview(  686): Window{7a32117 u0 Application Error: com.locationsharing.app.debug}: Setting back callback null
+
+08-19 08:21:43.825 I/ActivityManager(  686): Killing 7960:com.locationsharing.app.debug/u0a217 (adj 900): crash
+
+08-19 08:21:43.905 V/ActivityManager(  686): Got obituary of 7960:com.locationsharing.app.debug
+
+08-19 08:21:43.926 I/EmojiCompatManager( 1338): java.lang.IllegalStateException: EmojiCompat is not initialized. Please call EmojiCompat.init() first
+
+08-19 08:21:46.854 E/TaskPersister(  686): File error accessing recents directory (directory doesn't exist?).

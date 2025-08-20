@@ -23,24 +23,26 @@ data class NearbyUiState(
     val lastUpdateTime: Long = System.currentTimeMillis()
 ) {
     /**
-     * Filtered friends based on search query with performance optimization
+     * Filtered friends based on search query with performance optimization.
+     * Friends are already sorted by distance from GetNearbyFriendsUseCase,
+     * so we only need to filter, not re-sort.
      */
     val filteredFriends: List<NearbyFriend>
         get() = if (searchQuery.isBlank()) {
-            friends.sortedBy { it.distance }
+            // Friends are already sorted by distance - no need to re-sort
+            friends
         } else {
-            // Performance optimization: Use sequence for large lists
+            // Performance optimization: Use sequence for large lists, preserve sort order
             if (friends.size > 100) {
                 friends.asSequence()
                     .filter { friend ->
                         friend.displayName.contains(searchQuery, ignoreCase = true)
                     }
-                    .sortedBy { it.distance }
-                    .toList()
+                    .toList() // Maintains existing sort order
             } else {
                 friends.filter { friend ->
                     friend.displayName.contains(searchQuery, ignoreCase = true)
-                }.sortedBy { it.distance }
+                } // Maintains existing sort order
             }
         }
     
@@ -74,4 +76,5 @@ sealed class NearbyPanelEvent {
     // Performance optimization events
     data class UpdateScrollPosition(val position: Int) : NearbyPanelEvent()
     object PreserveState : NearbyPanelEvent()
+    object InviteFriends : NearbyPanelEvent()
 }

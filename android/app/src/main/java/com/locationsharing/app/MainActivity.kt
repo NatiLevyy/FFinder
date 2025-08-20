@@ -1,126 +1,211 @@
 package com.locationsharing.app
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.material3.Text
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.locationsharing.app.navigation.NavigationManager
+import com.locationsharing.app.navigation.NavigationStateTracker
+import com.locationsharing.app.navigation.Screen
 import com.locationsharing.app.ui.screens.MapScreen
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import kotlinx.coroutines.launch
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import com.locationsharing.app.ui.theme.FFinderTheme
 import com.locationsharing.app.ui.screens.FriendsListScreen
+import com.locationsharing.app.ui.home.HomeScreen
+import com.locationsharing.app.ui.invite.InviteFriendsScreen
+import com.locationsharing.app.ui.settings.SettingsScreen
+import com.locationsharing.app.ui.friends.hub.FriendsHubScreen
+import com.locationsharing.app.ui.search.GlobalFriendSearchScreen
 import timber.log.Timber
 import dagger.hilt.android.AndroidEntryPoint
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.locationsharing.app.ui.invite.InviteFriendsScreen
+import javax.inject.Inject
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import com.locationsharing.app.data.auth.AuthManager
 
+/**
+ * Main activity for the FFinder application.
+ * Uses enhanced NavigationManager for centralized navigation control with error handling.
+ */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    
+    @Inject
+    lateinit var navigationManager: NavigationManager
+    
+    @Inject
+    lateinit var navigationStateTracker: NavigationStateTracker
+    
+    @Inject
+    lateinit var authManager: AuthManager
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         
-        Timber.d("MainActivity created")
+        Timber.d("MainActivity created with enhanced navigation")
+        
+        // Ensure user is authenticated on app startup
+        lifecycleScope.launch {
+            try {
+                authManager.ensureSignedIn()
+                Timber.d("User authenticated successfully on app startup")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to authenticate user on app startup")
+                // App can still continue with limited functionality
+            }
+        }
         
         setContent {
             FFinderTheme {
                 val navController = rememberNavController()
+                val navigationState by navigationStateTracker.currentState.collectAsState()
                 
+                // Initialize NavigationManager with NavController
+                LaunchedEffect(navController) {
+                    navigationManager.setNavController(navController)
+                    Timber.d("NavigationManager initialized with NavController")
+                }
+                
+                // Enhanced NavHost with error handling
                 NavHost(
                     navController = navController,
-                    startDestination = "home"
+                    startDestination = Screen.HOME.route
                 ) {
-                    composable("home") {
+                    composable(Screen.HOME.route) {
                         HomeScreen(
-                            onNavigateToMap = {
-                                navController.navigate("map")
+                            onStartShare = {
+                                Timber.d("HomeScreen: Start sharing triggered")
+                                // Navigation is handled by the NavigationManager in the button components
                             },
-                            onNavigateToFriends = {
-                                navController.navigate("friends")
-                            }
+                            navigationManager = navigationManager
                         )
                     }
-                    composable("map") {
+                    
+                    composable(
+                        route = "${Screen.MAP.route}?startSharing={startSharing}&friendId={friendId}",
+                        arguments = listOf(
+                            navArgument("startSharing") {
+                                type = NavType.BoolType
+                                defaultValue = false
+                            },
+                            navArgument("friendId") {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            }
+                        )
+                    ) { backStackEntry ->
+                        // Update navigation state when entering map screen
+                        LaunchedEffect(Unit) {
+                            navigationStateTracker.updateCurrentScreen(Screen.MAP)
+                        }
+                        
+                        val startSharing = backStackEntry.arguments?.getBoolean("startSharing") ?: false
+                        val friendId = backStackEntry.arguments?.getString("friendId")
+                        
                         MapScreen(
+                            startSharing = startSharing,
+                            friendIdToFocus = friendId,
                             onBackClick = {
-                                navController.popBackStack()
+                                Timber.d("MapScreen: Back navigation requested")
+                                if (!navigationManager.navigateBack()) {
+                                    // Fallback to home if back navigation fails
+                                    navigationManager.navigateToHome()
+                                }
+                            },
+                            onSearchFriendsClick = {
+                                Timber.d("MapScreen: Search friends navigation requested")
+                                navigationManager.navigateToSearchFriends()
                             }
                         )
                     }
-                    composable("friends") {
+                    
+                    composable(Screen.FRIENDS.route) {
+                        // Update navigation state when entering friends screen
+                        LaunchedEffect(Unit) {
+                            navigationStateTracker.updateCurrentScreen(Screen.FRIENDS)
+                        }
+                        
                         FriendsListScreen(
                             onBackClick = {
-                                navController.popBackStack()
+                                Timber.d("FriendsScreen: Back navigation requested")
+                                if (!navigationManager.navigateBack()) {
+                                    // Fallback to home if back navigation fails
+                                    navigationManager.navigateToHome()
+                                }
                             },
                             onFriendClick = { friend ->
-                                // Navigate to friend details or map
-                                navController.navigate("map")
+                                Timber.d("FriendsScreen: Navigating to map for friend: ${friend.name}")
+                                navigationManager.navigateToMap()
                             },
                             onInviteFriendsClick = {
+                                Timber.d("FriendsScreen: Navigating to invite friends")
+                                // For now, navigate to invite_friends route directly
+                                // TODO: Add invite friends to NavigationManager when implemented
                                 navController.navigate("invite_friends")
                             }
                         )
                     }
+                    
+                    composable(Screen.FRIENDS_HUB.route) {
+                        FriendsHubScreen(
+                            onNavigateToGlobalSearch = {
+                                navigationManager.navigateToSearchFriends()
+                            }
+                        )
+                    }
+
+                    composable(Screen.SETTINGS.route) {
+                        SettingsScreen()
+                    }
+                    
+                    // Legacy route for invite friends - will be migrated to NavigationManager later
                     composable("invite_friends") {
                         InviteFriendsScreen(
                             onBackClick = {
-                                navController.popBackStack()
+                                Timber.d("InviteFriendsScreen: Back navigation requested")
+                                if (!navigationManager.navigateBack()) {
+                                    navigationManager.navigateToHome()
+                                }
+                            },
+                            onEnableContactDiscovery = {
+                                Timber.d("InviteFriendsScreen: Navigate to phone verification")
+                                navController.navigate("phone_verification")
+                            }
+                        )
+                    }
+                    
+                    // Phone verification for contact discovery (temporarily disabled for release build)
+                    composable("phone_verification") {
+                        // TODO: Re-enable PhoneVerificationScreen for full functionality
+                        Text("Phone verification coming soon...")
+                    }
+                    
+                    composable(Screen.SEARCH_FRIENDS.route) {
+                        // Update navigation state when entering search friends screen
+                        LaunchedEffect(Unit) {
+                            navigationStateTracker.updateCurrentScreen(Screen.SEARCH_FRIENDS)
+                        }
+                        
+                        GlobalFriendSearchScreen(
+                            onBackClick = {
+                                Timber.d("GlobalFriendSearchScreen: Back navigation requested")
+                                if (!navigationManager.navigateBack()) {
+                                    navigationManager.navigateToMap()
+                                }
+                            },
+                            onFriendSelected = { friend ->
+                                // Navigate back to map and zoom to friend
+                                navigationManager.navigateToMapWithFriend(friend.id)
                             }
                         )
                     }
@@ -128,310 +213,20 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
-
-@Composable
-fun HomeScreen(
-    onNavigateToMap: () -> Unit,
-    onNavigateToFriends: () -> Unit
-) {
-    var isLocationSharing by remember { mutableStateOf(false) }
-    var hasLocationPermission by remember { mutableStateOf(false) }
-    var showFriendsDialog by remember { mutableStateOf(false) }
-    var showSettingsDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     
-    // Check location permission
-    hasLocationPermission = ContextCompat.checkSelfPermission(
-        context,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    ) == PackageManager.PERMISSION_GRANTED
-    
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        hasLocationPermission = isGranted
-        if (isGranted) {
-            Timber.d("Location permission granted")
-        } else {
-            Timber.w("Location permission denied")
-        }
-    }
-    
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { 
-                    scope.launch {
-                        snackbarHostState.showSnackbar("Quick location share coming soon!")
-                    }
-                    Timber.d("FAB clicked")
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = "Quick Share Location"
-                )
-            }
-        }
-    ) { innerPadding ->
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-        // Header
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(top = 32.dp)
-        ) {
-            Text(
-                text = "FFinder",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "Find Friends, Share Locations",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+    /**
+     * Handle system back button with NavigationManager.
+     */
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        Timber.d("System back button pressed")
         
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // Status Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = if (isLocationSharing) 
-                    MaterialTheme.colorScheme.primaryContainer 
-                else 
-                    MaterialTheme.colorScheme.surfaceVariant
-            ),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = if (isLocationSharing) 
-                        MaterialTheme.colorScheme.primary 
-                    else 
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Text(
-                    text = if (isLocationSharing) "Location Sharing Active" else "Location Sharing Off",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                
-                Text(
-                    text = if (isLocationSharing) 
-                        "Your friends can see your location" 
-                    else 
-                        "Enable location sharing to connect with friends",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        if (!navigationManager.navigateBack()) {
+            // If NavigationManager can't handle back navigation, use system default
+            Timber.d("NavigationManager couldn't handle back navigation, using system default")
+            super.onBackPressed()
         }
-        
-        // Action Buttons
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            if (!hasLocationPermission) {
-                Button(
-                    onClick = {
-                        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Grant Location Permission")
-                }
-            } else {
-                Button(
-                    onClick = { 
-                        if (!isLocationSharing) {
-                            isLocationSharing = true
-                            Timber.d("Location sharing started, navigating to map")
-                            onNavigateToMap()
-                        } else {
-                            isLocationSharing = false
-                            Timber.d("Location sharing stopped")
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = if (isLocationSharing) "Stop Sharing" else "Start Sharing"
-                    )
-                }
-            }
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(
-                    onClick = { 
-                        onNavigateToFriends()
-                        Timber.d("Friends clicked")
-                    },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Friends")
-                }
-                
-                OutlinedButton(
-                    onClick = { 
-                        showSettingsDialog = true
-                        Timber.d("Settings clicked")
-                    },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Settings")
-                }
-            }
-        }
-        
-        Spacer(modifier = Modifier.weight(1f))
-        
-        // Features List
-        AnimatedVisibility(
-            visible = true,
-            enter = fadeIn() + scaleIn(),
-            exit = fadeOut() + scaleOut()
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "🚀 Enhanced Features",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    
-                    val features = listOf(
-                        "• Smooth animations & transitions",
-                        "• Full accessibility support",
-                        "• Privacy-first design",
-                        "• Real-time location sharing",
-                        "• Comprehensive testing"
-                    )
-                    
-                    features.forEach { feature ->
-                        Text(
-                            text = feature,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 2.dp)
-                        )
-                    }
-                }
-            }
-        }
-            }
-        }
-    }
-    
-    // Friends Dialog
-    if (showFriendsDialog) {
-        AlertDialog(
-            onDismissRequest = { showFriendsDialog = false },
-            title = { Text("Friends") },
-            text = { 
-                Text("Friends feature coming soon!\n\n" +
-                     "You'll be able to:\n" +
-                     "• Add friends by phone or email\n" +
-                     "• Send location sharing requests\n" +
-                     "• View friends on the map\n" +
-                     "• Manage sharing permissions")
-            },
-            confirmButton = {
-                TextButton(onClick = { showFriendsDialog = false }) {
-                    Text("Got it!")
-                }
-            }
-        )
-    }
-    
-    // Settings Dialog
-    if (showSettingsDialog) {
-        AlertDialog(
-            onDismissRequest = { showSettingsDialog = false },
-            title = { Text("Settings") },
-            text = { 
-                Text("Settings feature coming soon!\n\n" +
-                     "You'll be able to configure:\n" +
-                     "• Privacy preferences\n" +
-                     "• Notification settings\n" +
-                     "• Location accuracy\n" +
-                     "• Account management\n" +
-                     "• App preferences")
-            },
-            confirmButton = {
-                TextButton(onClick = { showSettingsDialog = false }) {
-                    Text("Got it!")
-                }
-            }
-        )
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    FFinderTheme {
-        HomeScreen(
-            onNavigateToMap = {},
-            onNavigateToFriends = {}
-        )
-    }
-}
+

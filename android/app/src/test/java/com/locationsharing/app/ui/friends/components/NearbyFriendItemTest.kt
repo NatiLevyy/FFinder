@@ -224,4 +224,184 @@ class NearbyFriendItemTest {
         // Then
         assertTrue("Click should trigger callback", clicked)
     }
+
+    @Test
+    fun nearbyFriendItem_withActionButtons_hasCorrectAccessibilityDescription() {
+        // Given
+        composeTestRule.setContent {
+            FFinderTheme {
+                NearbyFriendItem(
+                    friend = sampleOnlineFriend,
+                    onClick = { },
+                    onMessageClick = { },
+                    onMoreClick = { }
+                )
+            }
+        }
+
+        // Then
+        composeTestRule
+            .onNodeWithContentDescription("Friend Alice Johnson, 150 m away, online, with action buttons available")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun nearbyFriendItem_messageButtonClick_triggersCallback() {
+        // Given
+        var messageClicked = false
+        var clickedFriend: NearbyFriend? = null
+        
+        composeTestRule.setContent {
+            FFinderTheme {
+                NearbyFriendItem(
+                    friend = sampleOnlineFriend,
+                    onClick = { },
+                    onMessageClick = { friend ->
+                        messageClicked = true
+                        clickedFriend = friend
+                    }
+                )
+            }
+        }
+
+        // When
+        composeTestRule
+            .onNodeWithContentDescription("Send message to Alice Johnson")
+            .performClick()
+
+        // Then
+        assertTrue("Message click should trigger callback", messageClicked)
+        assertEquals("Should pass correct friend", sampleOnlineFriend, clickedFriend)
+    }
+
+    @Test
+    fun nearbyFriendItem_moreActionsButtonClick_triggersCallback() {
+        // Given
+        var moreActionsClicked = false
+        var clickedFriend: NearbyFriend? = null
+        
+        composeTestRule.setContent {
+            FFinderTheme {
+                NearbyFriendItem(
+                    friend = sampleOnlineFriend,
+                    onClick = { },
+                    onMoreClick = { friend ->
+                        moreActionsClicked = true
+                        clickedFriend = friend
+                    }
+                )
+            }
+        }
+
+        // When
+        composeTestRule
+            .onNodeWithContentDescription("More actions for Alice Johnson")
+            .performClick()
+
+        // Then
+        assertTrue("More actions click should trigger callback", moreActionsClicked)
+        assertEquals("Should pass correct friend", sampleOnlineFriend, clickedFriend)
+    }
+
+    @Test
+    fun nearbyFriendItem_withoutActionButtons_doesNotShowActionButtons() {
+        // Given
+        composeTestRule.setContent {
+            FFinderTheme {
+                NearbyFriendItem(
+                    friend = sampleOnlineFriend,
+                    onClick = { }
+                )
+            }
+        }
+
+        // Then
+        composeTestRule
+            .onNodeWithContentDescription("Send message to Alice Johnson")
+            .assertDoesNotExist()
+        
+        composeTestRule
+            .onNodeWithContentDescription("More actions for Alice Johnson")
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun nearbyFriendItem_withMessageButtonOnly_showsOnlyMessageButton() {
+        // Given
+        composeTestRule.setContent {
+            FFinderTheme {
+                NearbyFriendItem(
+                    friend = sampleOnlineFriend,
+                    onClick = { },
+                    onMessageClick = { }
+                )
+            }
+        }
+
+        // Then
+        composeTestRule
+            .onNodeWithContentDescription("Send message to Alice Johnson")
+            .assertIsDisplayed()
+        
+        composeTestRule
+            .onNodeWithContentDescription("More actions for Alice Johnson")
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun nearbyFriendItem_withMoreActionsButtonOnly_showsOnlyMoreActionsButton() {
+        // Given
+        composeTestRule.setContent {
+            FFinderTheme {
+                NearbyFriendItem(
+                    friend = sampleOnlineFriend,
+                    onClick = { },
+                    onMoreClick = { }
+                )
+            }
+        }
+
+        // Then
+        composeTestRule
+            .onNodeWithContentDescription("Send message to Alice Johnson")
+            .assertDoesNotExist()
+        
+        composeTestRule
+            .onNodeWithContentDescription("More actions for Alice Johnson")
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun nearbyFriendItem_actionButtons_haveProperAccessibilityRoles() {
+        // Given
+        composeTestRule.setContent {
+            FFinderTheme {
+                NearbyFriendItem(
+                    friend = sampleOnlineFriend,
+                    onClick = { },
+                    onMessageClick = { },
+                    onMoreClick = { }
+                )
+            }
+        }
+
+        // Then
+        composeTestRule
+            .onNodeWithContentDescription("Send message to Alice Johnson")
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.Role,
+                    androidx.compose.ui.semantics.Role.Button
+                )
+            )
+        
+        composeTestRule
+            .onNodeWithContentDescription("More actions for Alice Johnson")
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.Role,
+                    androidx.compose.ui.semantics.Role.Button
+                )
+            )
+    }
 }

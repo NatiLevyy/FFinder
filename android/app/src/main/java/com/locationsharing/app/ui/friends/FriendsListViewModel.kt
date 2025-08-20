@@ -6,7 +6,7 @@ import com.locationsharing.app.data.friends.Friend
 import com.locationsharing.app.data.friends.FriendsRepository
 import com.locationsharing.app.data.friends.RealTimeFriendsService
 import com.locationsharing.app.data.friends.ConnectionState
-import dagger.hilt.android.lifecycle.HiltViewModel
+// import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,14 +14,14 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
+// import javax.inject.Inject
 
 /**
  * ViewModel for the Friends List screen with real-time Firebase integration
  * Handles friends data, status updates, and UI state management
  */
-@HiltViewModel
-class FriendsListViewModel @Inject constructor(
+// @HiltViewModel
+class FriendsListViewModel constructor(
     private val friendsRepository: FriendsRepository,
     private val realTimeFriendsService: RealTimeFriendsService
 ) : ViewModel() {
