@@ -8,7 +8,9 @@
       "Bash(timeout:*)",
       "Bash(adb logcat:*)",
       "Bash(adb:*)",
-      "Bash(keytool:*)"
+      "Bash(keytool:*)",
+      "Bash(curl:*)",
+      "Bash(emulator:*)"
     ],
     "deny": [],
     "ask": [],

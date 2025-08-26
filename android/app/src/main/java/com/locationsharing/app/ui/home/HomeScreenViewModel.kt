@@ -25,7 +25,26 @@ import timber.log.Timber
  */
 class HomeScreenViewModel : ViewModel() {
     
-    private val _state = MutableStateFlow(HomeScreenState())
+    private val _state = MutableStateFlow(
+        HomeScreenState(
+            isLoading = false,
+            hasLocationPermission = false,
+            isLocationSharing = false,
+            isWaitingForLocationFix = false,
+            showWhatsNewDialog = false,
+            mapPreviewLocation = null,
+            animationsEnabled = true,
+            isNarrowScreen = false,
+            mapLoadError = false,
+            locationError = null,
+            isNavigating = false,
+            isNavigatingToMap = false,
+            isNavigatingToFriends = false,
+            isNavigatingToSettings = false,
+            retryCount = null,
+            timeoutDuration = null
+        )
+    )
     val state: StateFlow<HomeScreenState> = _state.asStateFlow()
     
     init {

@@ -22,6 +22,8 @@ import com.google.android.gms.maps.model.LatLng
  * @property isNavigatingToMap Whether navigation to map screen is in progress
  * @property isNavigatingToFriends Whether navigation to friends screen is in progress
  * @property isNavigatingToSettings Whether navigation to settings screen is in progress
+ * @property retryCount Number of retry attempts for failed operations
+ * @property timeoutDuration Timeout duration in milliseconds for operations
  */
 data class HomeScreenState(
     val isLoading: Boolean = false,
@@ -37,5 +39,7 @@ data class HomeScreenState(
     val isNavigating: Boolean = false,
     val isNavigatingToMap: Boolean = false,
     val isNavigatingToFriends: Boolean = false,
-    val isNavigatingToSettings: Boolean = false
+    val isNavigatingToSettings: Boolean = false,
+    val retryCount: Int? = null,
+    val timeoutDuration: Int? = null
 )
