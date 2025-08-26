@@ -11,6 +11,7 @@ bin/
 gen/
 out/
 release/
+android/app/google-services.json
 
 # Android Studio
 .idea/

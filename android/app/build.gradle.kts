@@ -19,6 +19,12 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        // Provide Maps API key via Gradle property or env (kept out of source control)
+        val mapsApiKey = (project.findProperty("MAPS_API_KEY") as? String)
+            ?: System.getenv("MAPS_API_KEY")
+            ?: ""
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
