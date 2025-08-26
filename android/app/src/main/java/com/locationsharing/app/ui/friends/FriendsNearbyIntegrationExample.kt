@@ -15,7 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.locationsharing.app.ui.friends.components.FriendInfoBottomSheetContent
 import com.locationsharing.app.ui.friends.components.FriendsNearbyPanel
@@ -43,7 +43,7 @@ fun FriendsNearbyIntegrationExample(
     val cameraPositionState = rememberCameraPositionState()
     
     // ViewModels
-    val nearbyViewModel: FriendsNearbyViewModel = hiltViewModel()
+    val nearbyViewModel: FriendsNearbyViewModel = viewModel()
     
     // State
     val uiState by nearbyViewModel.uiState.collectAsState()

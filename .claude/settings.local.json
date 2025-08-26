@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew:*)",
+      "Bash(.gradlew assembleDebug)",
+      "Bash(adb shell:*)",
+      "Bash(adb pull:*)",
+      "Bash(timeout:*)",
+      "Bash(adb logcat:*)",
+      "Bash(adb:*)",
+      "Bash(keytool:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\c\\FFinder"
+    ]
+  }
+}

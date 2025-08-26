@@ -58,9 +58,11 @@ import com.locationsharing.app.ui.theme.FFinderAnimations
 import kotlinx.coroutines.delay
 
 /**
- * Enhanced animated friend marker for map display
+ * Enhanced animated friend marker for map display with micro-animations
  * Features: bounce-in animation, pulsing online indicator, selection state, shadow effects,
- * movement trails, branded animations, and accessibility support
+ * movement trails, branded animations, position interpolation, and accessibility support
+ * 
+ * Implements requirement 8.5: Friend marker position interpolation animations
  */
 @Composable
 fun AnimatedFriendMarker(
@@ -69,7 +71,8 @@ fun AnimatedFriendMarker(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     showAppearAnimation: Boolean = false,
-    showMovementTrail: Boolean = false
+    showMovementTrail: Boolean = false,
+    targetPosition: Pair<Float, Float>? = null
 ) {
     val context = LocalContext.current
     
@@ -82,6 +85,15 @@ fun AnimatedFriendMarker(
             hasAppeared = true
         }
     }
+    
+    // Position interpolation animation using MapMicroAnimations
+    val (animatedX, animatedY) = targetPosition?.let { (x, y) ->
+        com.locationsharing.app.ui.map.animations.MapMicroAnimations.FriendMarkerPositionAnimation(
+            targetX = x,
+            targetY = y,
+            animationDuration = 500
+        )
+    } ?: Pair(0f, 0f)
     
     // Core animation states
     val markerScale by animateFloatAsState(
@@ -190,6 +202,7 @@ fun AnimatedFriendMarker(
             modifier = modifier
                 .size(64.dp)
                 .scale(markerScale)
+                .offset(x = animatedX.dp, y = animatedY.dp) // Apply position animation
                 .clickable { onClick() }
                 .semantics {
                     contentDescription = "${friend.name} is ${if (friend.isOnline()) "online" else "offline"}" +
@@ -205,9 +218,54 @@ fun AnimatedFriendMarker(
                 )
             }
             
+            // Enhanced pulse halo for Very Close friends (< 300m)
+            val isVeryClose = friend.location?.let { location ->
+                // Calculate distance if user location is available
+                // This is a placeholder - actual distance should come from NearbyFriend
+                false // Will be enhanced when integrated with MapScreen
+            } ?: false
+            
             // Multi-layered pulsing rings for online friends
             if (friend.isOnline()) {
-                // Outer pulse ring
+                // Very Close friends get enhanced halo effect
+                if (isVeryClose) {
+                    // Large outer halo for very close friends
+                    Box(
+                        modifier = Modifier
+                            .size(96.dp)
+                            .scale(pulseScale * 1.2f)
+                            .alpha(pulseAlpha * 0.3f)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                                        Color(android.graphics.Color.parseColor(friend.profileColor)).copy(alpha = 0.4f),
+                                        Color.Transparent
+                                    )
+                                ),
+                                shape = CircleShape
+                            )
+                    )
+                    
+                    // Medium halo ring
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .scale(pulseScale * 1.1f)
+                            .alpha(pulseAlpha * 0.4f)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                        Color.Transparent
+                                    )
+                                ),
+                                shape = CircleShape
+                            )
+                    )
+                }
+                
+                // Standard outer pulse ring
                 Box(
                     modifier = Modifier
                         .size(56.dp)

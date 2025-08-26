@@ -11,23 +11,24 @@ import com.locationsharing.app.domain.model.ContactImportResult
 import com.locationsharing.app.domain.repository.ContactImportManager
 import com.locationsharing.app.domain.repository.ContactImportProgress
 import com.locationsharing.app.utils.PhoneNumberUtils
-import dagger.hilt.android.qualifiers.ApplicationContext
+// import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import timber.log.Timber
-import javax.inject.Inject
-import javax.inject.Singleton
+// import javax.inject.Inject
+// import javax.inject.Singleton
 
 /**
  * Production implementation of ContactImportManager
  * Handles contact import from Android ContactsContract API with proper error handling
  */
-@Singleton
-class ContactImportManagerImpl @Inject constructor(
-    @ApplicationContext private val context: Context
+// @Singleton
+class ContactImportManagerImpl /* @Inject */ constructor(
+    // @ApplicationContext 
+     private val context: Context
 ) : ContactImportManager {
     
     companion object {

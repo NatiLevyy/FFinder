@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- FFinder Pin Foreground - Teardrop pin shape with safe padding -->
+    <!-- Scaled and positioned for adaptive icon foreground -->
+    
+    <!-- Main pin shape - centered with 18dp safe padding -->
+    <path
+        android:fillColor="#6B4F8F"
+        android:pathData="M54,26C46.27,26 40,32.27 40,40c0,12 14,28 14,28s14,-16 14,-28C68,32.27 61.73,26 54,26zM54,46c-3.31,0 -6,-2.69 -6,-6s2.69,-6 6,-6s6,2.69 6,6S57.31,46 54,46z" />
+    
+    <!-- Inner highlight for depth -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.3"
+        android:pathData="M54,30c-5.52,0 -10,4.48 -10,10c0,2 0.5,4 1.5,6c2,-4 5.5,-6 8.5,-6s6.5,2 8.5,6c1,-2 1.5,-4 1.5,-6C64,34.48 59.52,30 54,30z" />
+    
+</vector>

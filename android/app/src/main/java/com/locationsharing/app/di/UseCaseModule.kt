@@ -3,10 +3,13 @@ package com.locationsharing.app.di
 import com.locationsharing.app.data.friends.FriendsRepository
 import com.locationsharing.app.data.location.EnhancedLocationService
 import com.locationsharing.app.domain.usecase.GetNearbyFriendsUseCase
+import com.locationsharing.app.domain.usecase.ShareLocationUseCase
 import com.locationsharing.app.ui.friends.components.NearbyPanelPerformanceMonitor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -23,13 +26,26 @@ object UseCaseModule {
         friendsRepository: FriendsRepository,
         locationService: EnhancedLocationService,
         performanceMonitor: NearbyPanelPerformanceMonitor,
-        @IoDispatcher dispatcher: CoroutineDispatcher = Dispatchers.Default
+        @IoDispatcher 
+        dispatcher: CoroutineDispatcher = Dispatchers.Default
     ): GetNearbyFriendsUseCase {
         return GetNearbyFriendsUseCase(
             friendsRepository = friendsRepository,
             locationService = locationService,
             performanceMonitor = performanceMonitor,
             dispatcher = dispatcher
+        )
+    }
+    
+    @Provides
+    @Singleton
+    fun provideShareLocationUseCase(
+        @ApplicationContext context: Context,
+        locationService: EnhancedLocationService
+    ): ShareLocationUseCase {
+        return ShareLocationUseCase(
+            context = context,
+            locationService = locationService
         )
     }
     

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="192dp"
+    android:height="192dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Circular Background -->
+    <path
+        android:fillColor="#6B4F8F"
+        android:pathData="M54,54m-54,0a54,54 0,1 1,108 0a54,54 0,1 1,-108 0" />
+    
+    <!-- Pin Icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,20C45.16,20 38,27.16 38,36c0,13.5 16,32 16,32s16,-18.5 16,-32C70,27.16 62.84,20 54,20zM54,42c-3.31,0 -6,-2.69 -6,-6s2.69,-6 6,-6s6,2.69 6,6S57.31,42 54,42z" />
+</vector>

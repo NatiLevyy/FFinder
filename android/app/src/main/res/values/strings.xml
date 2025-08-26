@@ -54,6 +54,5 @@
     <string name="friends_panel_accessibility">Friends nearby panel</string>
     <string name="map_with_friends_panel_accessibility">Map screen with friends panel</string>
     
-    <!-- Google Maps API Key -->
-    <string name="google_maps_api_key">AIzaSyDynUiAXTN354tCutKG7dDc2iyOROLKuqQ</string>
+    <!-- Quick Share -->
 </resources>

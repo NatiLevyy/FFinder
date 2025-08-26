@@ -8,13 +8,13 @@ import com.locationsharing.app.domain.model.DiscoveredUser
 import com.locationsharing.app.domain.model.UserDiscoveryResult
 import com.locationsharing.app.domain.repository.ContactImportManager
 import com.locationsharing.app.domain.repository.UserDiscoveryService
-import dagger.hilt.android.lifecycle.HiltViewModel
+// import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
-import javax.inject.Inject
+// import javax.inject.Inject
 
 /**
  * Example ViewModel demonstrating the complete flow:
@@ -22,8 +22,8 @@ import javax.inject.Inject
  * 
  * This shows how to connect both services for a complete invite friends experience
  */
-@HiltViewModel
-class UserDiscoveryExampleViewModel @Inject constructor(
+// @HiltViewModel
+class UserDiscoveryExampleViewModel constructor(
     private val contactImportManager: ContactImportManager,
     private val userDiscoveryService: UserDiscoveryService
 ) : ViewModel() {

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.BatteryManager
+import android.os.Looper
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
@@ -30,8 +31,9 @@ import javax.inject.Singleton
  * Implements intelligent update intervals based on battery level and movement patterns
  */
 @Singleton
-class EnhancedLocationService @Inject constructor(
-    @ApplicationContext private val context: Context
+open class EnhancedLocationService @Inject constructor(
+    @ApplicationContext 
+     protected val context: Context
 ) {
     
     private val fusedLocationClient: FusedLocationProviderClient = 
@@ -44,6 +46,8 @@ class EnhancedLocationService @Inject constructor(
     private var lastKnownLocation: Location? = null
     private var lastMovementTime: Long = 0L
     private var isHighAccuracyMode: Boolean = false
+    private var currentUpdateInterval: Long = DEFAULT_UPDATE_INTERVAL
+    private var lastIntervalAdjustment: Long = 0L
     
     companion object {
         private const val DEFAULT_UPDATE_INTERVAL = 2000L // 2 seconds
@@ -57,9 +61,71 @@ class EnhancedLocationService @Inject constructor(
     }
     
     /**
+     * Get current location once (for immediate location requests)
+     */
+    fun getCurrentLocation(): Flow<LatLng?> = callbackFlow {
+        if (!hasLocationPermission()) {
+            Timber.w("Location permission not granted for current location")
+            trySend(null)
+            close()
+            return@callbackFlow
+        }
+        
+        try {
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location ->
+                    if (location != null) {
+                        trySend(LatLng(location.latitude, location.longitude))
+                        Timber.d("Got current location: ${location.latitude}, ${location.longitude}")
+                    } else {
+                        // Request fresh location if last location is null
+                        requestFreshLocation()
+                    }
+                    close()
+                }
+                .addOnFailureListener { exception ->
+                    Timber.e(exception, "Failed to get current location")
+                    trySend(null)
+                    close(exception)
+                }
+        } catch (e: SecurityException) {
+            Timber.e(e, "Security exception getting current location")
+            trySend(null)
+            close(e)
+        }
+        
+        awaitClose { }
+    }
+    
+    /**
+     * Request a fresh location update (when last location is null or stale)
+     */
+    private fun requestFreshLocation() {
+        if (!hasLocationPermission()) return
+        
+        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000L)
+            .setMaxUpdates(1)
+            .build()
+            
+        val callback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                result.lastLocation?.let { location ->
+                    Timber.d("Got fresh location: ${location.latitude}, ${location.longitude}")
+                }
+            }
+        }
+        
+        try {
+            fusedLocationClient.requestLocationUpdates(locationRequest, callback, Looper.getMainLooper())
+        } catch (e: SecurityException) {
+            Timber.e(e, "Security exception requesting fresh location")
+        }
+    }
+
+    /**
      * Get optimized location updates with intelligent interval adjustment
      */
-    fun getLocationUpdates(): Flow<FriendLocationUpdate> = callbackFlow {
+    open fun getLocationUpdates(): Flow<FriendLocationUpdate> = callbackFlow {
         if (!hasLocationPermission()) {
             Timber.w("Location permission not granted")
             close()
@@ -86,7 +152,7 @@ class EnhancedLocationService @Inject constructor(
             fusedLocationClient.requestLocationUpdates(
                 locationRequest,
                 locationCallback,
-                null
+                Looper.getMainLooper()
             )
             Timber.d("Enhanced location updates started")
         } catch (e: SecurityException) {
@@ -182,7 +248,7 @@ class EnhancedLocationService @Inject constructor(
      */
     private fun createOptimizedLocationRequest(): LocationRequest {
         val batteryLevel = getBatteryLevel()
-        val interval = getOptimalUpdateInterval(batteryLevel)
+        val interval = currentUpdateInterval
         
         val priority = when {
             batteryLevel < CRITICAL_BATTERY_THRESHOLD -> Priority.PRIORITY_LOW_POWER
@@ -217,20 +283,33 @@ class EnhancedLocationService @Inject constructor(
      * Dynamically adjust update interval based on current conditions
      */
     private fun adjustUpdateInterval(location: Location) {
+        val currentTime = System.currentTimeMillis()
+        
+        // Prevent rapid re-adjustments (minimum 30 seconds between adjustments)
+        if (currentTime - lastIntervalAdjustment < 30000L) {
+            return
+        }
+        
         val batteryLevel = getBatteryLevel()
         val newInterval = getOptimalUpdateInterval(batteryLevel)
         
-        // Restart location updates with new interval if significantly different
-        val currentCallback = currentLocationCallback
-        if (currentCallback != null) {
-            val newRequest = createOptimizedLocationRequest()
+        // Only adjust if the interval has changed significantly (more than 2 seconds difference)
+        if (kotlin.math.abs(newInterval - currentUpdateInterval) > 2000L) {
+            currentUpdateInterval = newInterval
+            lastIntervalAdjustment = currentTime
             
-            try {
-                fusedLocationClient.removeLocationUpdates(currentCallback)
-                fusedLocationClient.requestLocationUpdates(newRequest, currentCallback, null)
-                Timber.d("Location update interval adjusted to ${newInterval}ms (battery: $batteryLevel%)")
-            } catch (e: SecurityException) {
-                Timber.e(e, "Error adjusting location update interval")
+            // Restart location updates with new interval
+            val currentCallback = currentLocationCallback
+            if (currentCallback != null) {
+                val newRequest = createOptimizedLocationRequest()
+                
+                try {
+                    fusedLocationClient.removeLocationUpdates(currentCallback)
+                    fusedLocationClient.requestLocationUpdates(newRequest, currentCallback, Looper.getMainLooper())
+                    Timber.d("Location update interval adjusted to ${newInterval}ms (battery: $batteryLevel%)")
+                } catch (e: SecurityException) {
+                    Timber.e(e, "Error adjusting location update interval")
+                }
             }
         }
     }
@@ -254,7 +333,7 @@ class EnhancedLocationService @Inject constructor(
     /**
      * Enable high accuracy mode for critical situations
      */
-    fun enableHighAccuracyMode(enable: Boolean) {
+    open fun enableHighAccuracyMode(enable: Boolean) {
         if (isHighAccuracyMode != enable) {
             isHighAccuracyMode = enable
             Timber.d("High accuracy mode ${if (enable) "enabled" else "disabled"}")
@@ -269,7 +348,7 @@ class EnhancedLocationService @Inject constructor(
     /**
      * Get location performance metrics
      */
-    fun getPerformanceMetrics(): LocationPerformanceMetrics {
+    open fun getPerformanceMetrics(): LocationPerformanceMetrics {
         val batteryLevel = getBatteryLevel()
         val isCharging = isCharging()
         val updateInterval = getOptimalUpdateInterval(batteryLevel)
@@ -297,7 +376,7 @@ class EnhancedLocationService @Inject constructor(
     /**
      * Stop location updates
      */
-    fun stopLocationUpdates() {
+    open fun stopLocationUpdates() {
         currentLocationCallback?.let { callback ->
             fusedLocationClient.removeLocationUpdates(callback)
             currentLocationCallback = null

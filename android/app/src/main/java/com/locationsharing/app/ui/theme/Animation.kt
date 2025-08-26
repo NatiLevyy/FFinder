@@ -109,6 +109,13 @@ object FFinderAnimations {
                 durationMillis = Duration.Emphasized.inWholeMilliseconds.toInt(),
                 easing = Easing.Decelerated,
             )
+
+        // Color transition animation
+        fun colorTransition() =
+            tween<androidx.compose.ui.graphics.Color>(
+                durationMillis = Duration.Quick.inWholeMilliseconds.toInt(),
+                easing = Easing.FFinderSmooth,
+            )
     }
 
     // Screen Transition Animations

@@ -18,7 +18,7 @@ import kotlin.system.measureTimeMillis
  * - 8.6: Add memory leak prevention for location updates
  */
 @Singleton
-class NearbyPanelPerformanceMonitor @Inject constructor() {
+open class NearbyPanelPerformanceMonitor @Inject constructor() {
     
     companion object {
         private const val TAG = "📍 NearbyPanel-Perf"
@@ -31,7 +31,7 @@ class NearbyPanelPerformanceMonitor @Inject constructor() {
     /**
      * Monitor distance calculation performance
      */
-    fun monitorDistanceCalculation(friendCount: Int, operation: () -> Unit) {
+    open fun monitorDistanceCalculation(friendCount: Int, operation: () -> Unit) {
         if (!BuildConfig.DEBUG) return
         
         val executionTime = measureTimeMillis {
@@ -60,7 +60,7 @@ class NearbyPanelPerformanceMonitor @Inject constructor() {
     /**
      * Monitor LazyColumn scrolling performance
      */
-    fun monitorScrollPerformance(friendCount: Int, scrollOperation: () -> Unit) {
+    open fun monitorScrollPerformance(friendCount: Int, scrollOperation: () -> Unit) {
         if (!BuildConfig.DEBUG) return
         
         val scrollTime = measureTimeMillis {
@@ -79,7 +79,7 @@ class NearbyPanelPerformanceMonitor @Inject constructor() {
     /**
      * Monitor memory usage
      */
-    fun monitorMemoryUsage(operation: String) {
+    open fun monitorMemoryUsage(operation: String) {
         if (!BuildConfig.DEBUG) return
         
         performanceScope.launch {
@@ -102,7 +102,7 @@ class NearbyPanelPerformanceMonitor @Inject constructor() {
     /**
      * Monitor search performance
      */
-    fun monitorSearchPerformance(friendCount: Int, query: String, searchOperation: () -> Unit) {
+    open fun monitorSearchPerformance(friendCount: Int, query: String, searchOperation: () -> Unit) {
         if (!BuildConfig.DEBUG) return
         
         val searchTime = measureTimeMillis {
@@ -122,7 +122,7 @@ class NearbyPanelPerformanceMonitor @Inject constructor() {
     /**
      * Monitor state preservation performance
      */
-    fun monitorStatePreservation(operation: () -> Unit) {
+    open fun monitorStatePreservation(operation: () -> Unit) {
         if (!BuildConfig.DEBUG) return
         
         val preservationTime = measureTimeMillis {
@@ -141,7 +141,7 @@ class NearbyPanelPerformanceMonitor @Inject constructor() {
     /**
      * Log performance summary
      */
-    fun logPerformanceSummary(
+    open fun logPerformanceSummary(
         friendCount: Int,
         calculationTime: Long,
         renderTime: Long,
@@ -170,7 +170,7 @@ class NearbyPanelPerformanceMonitor @Inject constructor() {
     /**
      * Track throttling effectiveness
      */
-    fun trackThrottlingEffectiveness(
+    open fun trackThrottlingEffectiveness(
         movementDistance: Double,
         timeSinceLastCalculation: Long,
         wasThrottled: Boolean
@@ -189,7 +189,7 @@ class NearbyPanelPerformanceMonitor @Inject constructor() {
     /**
      * Monitor configuration change performance
      */
-    fun monitorConfigurationChange(operation: () -> Unit) {
+    open fun monitorConfigurationChange(operation: () -> Unit) {
         if (!BuildConfig.DEBUG) return
         
         val configChangeTime = measureTimeMillis {

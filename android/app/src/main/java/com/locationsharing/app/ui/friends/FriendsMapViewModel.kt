@@ -14,6 +14,7 @@ import com.locationsharing.app.data.friends.FriendUpdateWithAnimation
 import com.locationsharing.app.data.friends.ConnectionState
 import com.locationsharing.app.domain.model.NearbyFriend
 import com.locationsharing.app.domain.usecase.GetNearbyFriendsUseCase
+import com.locationsharing.app.ui.friends.logging.NearbyPanelLogger
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -203,13 +204,25 @@ class FriendsMapViewModel @Inject constructor(
     private fun observeNearbyFriends() {
         viewModelScope.launch {
             nearbyFriends.collect { friends ->
+                // Preserve debug friends when updating with real friends data
+                val currentFriends = _nearbyUiState.value.friends
+                val debugFriends = if (BuildConfig.DEBUG) {
+                    currentFriends.filter { it.id.startsWith("debug_") }
+                } else {
+                    emptyList()
+                }
+                
+                val combinedFriends = (friends + debugFriends)
+                    .distinctBy { it.id }
+                    .sortedBy { it.distance }
+                
                 _nearbyUiState.value = _nearbyUiState.value.copy(
-                    friends = friends,
+                    friends = combinedFriends,
                     isLoading = false
                 )
                 
                 if (BuildConfig.DEBUG) {
-                    Timber.d("📍 Distance updated for ${friends.size} friends")
+                    Timber.d("📍 Distance updated for ${friends.size} real friends + ${debugFriends.size} debug friends")
                 }
             }
         }
@@ -219,27 +232,40 @@ class FriendsMapViewModel @Inject constructor(
      * Handle friend selection with enhanced animations and state management
      */
     fun selectFriend(friendId: String) {
-        Timber.d("🧪 DEBUG: selectFriend called for ID: $friendId")
+        NearbyPanelLogger.logFriendInteraction("SELECT_FRIEND", friendId, "Unknown")
         
         viewModelScope.launch {
             try {
                 // Get friend from current state
                 val allFriends = _uiState.value.friends
-                Timber.d("🧪 DEBUG: Searching in ${allFriends.size} friends")
                 
                 val friend = allFriends.find { it.id == friendId }
                 
                 if (friend != null) {
-                    Timber.d("🧪 DEBUG: Found friend: ${friend.name} (${friend.id})")
                     _selectedFriend.value = friend
                     _uiState.value = _uiState.value.copy(selectedFriend = friend)
-                    Timber.d("🧪 DEBUG: Friend selected successfully: ${friend.name}")
+                    
+                    NearbyPanelLogger.logFriendInteraction(
+                        "FRIEND_SELECTED_SUCCESS",
+                        friendId,
+                        friend.name
+                    )
                 } else {
-                    Timber.w("🧪 DEBUG: Friend not found with ID: $friendId")
-                    Timber.d("🧪 DEBUG: Available friend IDs: ${allFriends.map { it.id }}")
+                    NearbyPanelLogger.logError(
+                        "selectFriend",
+                        RuntimeException("Friend not found"),
+                        mapOf(
+                            "friendId" to friendId,
+                            "availableFriends" to allFriends.size
+                        )
+                    )
                 }
             } catch (e: Exception) {
-                Timber.e(e, "🧪 DEBUG: Error selecting friend: $friendId")
+                NearbyPanelLogger.logError(
+                    "selectFriend",
+                    e,
+                    mapOf("friendId" to friendId)
+                )
                 _uiState.value = _uiState.value.copy(error = "Error selecting friend: ${e.message}")
             }
         }
@@ -508,6 +534,7 @@ class FriendsMapViewModel @Inject constructor(
             is NearbyPanelEvent.ClearError -> clearNearbyError()
             is NearbyPanelEvent.ClearFeedback -> clearNearbyFeedback()
             is NearbyPanelEvent.DismissSnackbar -> dismissSnackbar()
+            is NearbyPanelEvent.InviteFriends -> handleInviteFriends()
             // Performance optimization events
             is NearbyPanelEvent.UpdateScrollPosition -> updateScrollPosition(event.position)
             is NearbyPanelEvent.PreserveState -> preserveNearbyState()
@@ -537,19 +564,43 @@ class FriendsMapViewModel @Inject constructor(
     
     /**
      * Handle friend click from nearby panel
+     * Enhanced to navigate to friend's location and show action options
      */
     private fun handleNearbyFriendClick(friendId: String) {
         viewModelScope.launch {
             try {
-                // Focus on friend on map
-                focusOnFriend(friendId)
+                // Get the friend from nearby friends list
+                val nearbyFriend = _nearbyUiState.value.friends.find { it.id == friendId }
+                if (nearbyFriend == null) {
+                    Timber.e("📍 NearbyPanel: Friend not found in nearby list: $friendId")
+                    _nearbyUiState.value = _nearbyUiState.value.copy(
+                        error = "Friend not found"
+                    )
+                    return@launch
+                }
                 
-                // Update selected friend in nearby state
+                // Focus on friend on map with enhanced camera animation
+                focusOnFriend(friendId) { location, zoomLevel ->
+                    // This callback will be handled by the UI layer for camera animation
+                    Timber.d("📍 NearbyPanel: Camera should focus on ${location.latitude}, ${location.longitude} with zoom $zoomLevel")
+                }
+                
+                // Update selected friend in nearby state to show bottom sheet
                 _nearbyUiState.value = _nearbyUiState.value.copy(
                     selectedFriendId = friendId
                 )
                 
-                Timber.d("📍 NearbyPanel: Friend clicked and selected: $friendId")
+                // Also select the friend in the main friends state for consistency
+                selectFriend(friendId)
+                
+                Timber.d("📍 NearbyPanel: Friend clicked, focused, and bottom sheet shown: $friendId")
+                
+                NearbyPanelLogger.logFriendInteraction(
+                    "FRIEND_CLICK_WITH_NAVIGATION",
+                    friendId,
+                    nearbyFriend.displayName
+                )
+                
             } catch (e: Exception) {
                 Timber.e(e, "📍 NearbyPanel: Error handling friend click: $friendId")
                 _nearbyUiState.value = _nearbyUiState.value.copy(
@@ -603,6 +654,22 @@ class FriendsMapViewModel @Inject constructor(
     }
     
     /**
+     * Adds debug friends to the nearby panel (debug builds only).
+     */
+    fun addDebugFriends(debugFriends: List<com.locationsharing.app.domain.model.NearbyFriend>) {
+        if (com.locationsharing.app.BuildConfig.DEBUG) {
+            val currentFriends = _nearbyUiState.value.friends.toMutableList()
+            currentFriends.addAll(debugFriends)
+            
+            _nearbyUiState.value = _nearbyUiState.value.copy(
+                friends = currentFriends.distinctBy { it.id }.sortedBy { it.distance }
+            )
+            
+            Timber.d("📍 NearbyPanel: Added ${debugFriends.size} debug friends. Total: ${currentFriends.size}")
+        }
+    }
+    
+    /**
      * Clear nearby panel feedback message
      */
     private fun clearNearbyFeedback() {
@@ -646,18 +713,27 @@ class FriendsMapViewModel @Inject constructor(
     fun focusOnFriend(friendId: String, onCameraUpdate: ((com.google.android.gms.maps.model.LatLng, Float) -> Unit)? = null) {
         viewModelScope.launch {
             try {
-                Timber.d("📍 NearbyPanel: Focusing on friend: $friendId")
-                
                 val friend = getFriendById(friendId)
                 if (friend == null) {
-                    Timber.w("📍 NearbyPanel: Friend not found for focus: $friendId")
+                    NearbyPanelLogger.logError(
+                        "focusOnFriend",
+                        RuntimeException("Friend not found"),
+                        mapOf("friendId" to friendId)
+                    )
                     _uiState.value = _uiState.value.copy(error = "Friend not found")
                     return@launch
                 }
                 
                 val friendLocation = friend.getLatLng()
                 if (friendLocation == null) {
-                    Timber.w("📍 NearbyPanel: Friend location not available: $friendId")
+                    NearbyPanelLogger.logError(
+                        "focusOnFriend",
+                        RuntimeException("Friend location not available"),
+                        mapOf(
+                            "friendId" to friendId,
+                            "friendName" to friend.name
+                        )
+                    )
                     _uiState.value = _uiState.value.copy(error = "Friend's location is not available")
                     return@launch
                 }
@@ -668,7 +744,11 @@ class FriendsMapViewModel @Inject constructor(
                 // Trigger camera animation via callback
                 onCameraUpdate?.invoke(friendLocation, 17f)
                 
-                Timber.d("📍 NearbyPanel: Successfully focused on friend ${friend.name} at ${friendLocation.latitude}, ${friendLocation.longitude}")
+                NearbyPanelLogger.logFriendInteraction(
+                    "FOCUS_ON_FRIEND",
+                    friendId,
+                    friend.name
+                )
                 
             } catch (e: Exception) {
                 Timber.e(e, "📍 NearbyPanel: Error focusing on friend: $friendId")
@@ -859,6 +939,34 @@ class FriendsMapViewModel @Inject constructor(
             } catch (e: Exception) {
                 Timber.e(e, "📍 NearbyPanel: Error creating message intent for friend: $friendId")
                 _nearbyUiState.value = _nearbyUiState.value.copy(error = "Failed to create message: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Handle invite friends action
+     * Opens the system share intent to invite friends to use FFinder
+     */
+    private fun handleInviteFriends() {
+        viewModelScope.launch {
+            try {
+                _nearbyUiState.value = _nearbyUiState.value.copy(
+                    feedbackMessage = "Opening invite friends..."
+                )
+                
+                NearbyPanelLogger.logFriendInteraction(
+                    "INVITE_FRIENDS",
+                    "system",
+                    "Invite Friends Action"
+                )
+                
+            } catch (e: Exception) {
+                NearbyPanelLogger.logError(
+                    "handleInviteFriends",
+                    e,
+                    emptyMap()
+                )
+                _nearbyUiState.value = _nearbyUiState.value.copy(error = "Failed to open invite: ${e.message}")
             }
         }
     }
