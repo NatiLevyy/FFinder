@@ -114,14 +114,9 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
                 
-                // Interactive Map Preview Card
-                MapPreviewCard(
-                    location = state.mapPreviewLocation,
-                    hasLocationPermission = state.hasLocationPermission,
+                // Lottie Animations Section (replaces Map Preview)
+                MapAnimationsSection(
                     animationsEnabled = state.animationsEnabled,
-                    onPermissionRequest = {
-                        viewModel.onEvent(HomeScreenEvent.LocationPermissionGranted)
-                    },
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -303,14 +298,9 @@ fun HomeScreenContent(
                     modifier = Modifier.fillMaxWidth()
                 )
                 
-                // Interactive Map Preview Card
-                MapPreviewCard(
-                    location = state.mapPreviewLocation,
-                    hasLocationPermission = state.hasLocationPermission,
+                // Lottie Animations Section (replaces Map Preview)
+                MapAnimationsSection(
                     animationsEnabled = state.animationsEnabled,
-                    onPermissionRequest = {
-                        onEvent(HomeScreenEvent.LocationPermissionGranted)
-                    },
                     modifier = Modifier.fillMaxWidth()
                 )
                 

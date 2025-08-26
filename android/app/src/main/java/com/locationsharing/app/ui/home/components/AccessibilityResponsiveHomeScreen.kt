@@ -73,12 +73,9 @@ fun AccessibilityResponsiveHomeScreen(
                 
                 Spacer(modifier = Modifier.height(accessibilityConfig.responsiveSpacing))
                 
-                // 2. Map Preview Card - Focus Order: 3
-                MapPreviewCard(
-                    location = userLocation,
-                    hasLocationPermission = hasLocationPermission,
+                // 2. Lottie Animations Section (replaces Map Preview) - Focus Order: 3
+                MapAnimationsSection(
                     animationsEnabled = accessibilityConfig.animationsEnabled,
-                    onPermissionRequest = onLocationPermissionRequest,
                     modifier = Modifier.padding(vertical = accessibilityConfig.responsiveSpacing)
                 )
                 

@@ -10,7 +10,8 @@
       "Bash(adb:*)",
       "Bash(keytool:*)",
       "Bash(curl:*)",
-      "Bash(emulator:*)"
+      "Bash(emulator:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": [],

@@ -127,14 +127,11 @@ fun MapPreviewWithErrorHandling(
             }
             
             MapPreviewState.Success -> {
-                if (location != null) {
-                    MapPreviewCard(
-                        location = location,
-                        hasLocationPermission = hasLocationPermission,
-                        animationsEnabled = animationsEnabled,
-                        onPermissionRequest = onPermissionRequest
-                    )
-                }
+                // Use MapAnimationsSection instead of MapPreviewCard
+                MapAnimationsSection(
+                    animationsEnabled = animationsEnabled,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
             
             MapPreviewState.Error -> {

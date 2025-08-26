@@ -25,8 +25,16 @@ import timber.log.Timber
  */
 class HomeScreenViewModel : ViewModel() {
     
-    private val _state = MutableStateFlow(
-        HomeScreenState(
+    private val _state = MutableStateFlow(createInitialState())
+    val state: StateFlow<HomeScreenState> = _state.asStateFlow()
+    
+    init {
+        Timber.d("HomeScreenViewModel initialized")
+        initializeState()
+    }
+    
+    private fun createInitialState(): HomeScreenState {
+        return HomeScreenState(
             isLoading = false,
             hasLocationPermission = false,
             isLocationSharing = false,
@@ -44,12 +52,6 @@ class HomeScreenViewModel : ViewModel() {
             retryCount = null,
             timeoutDuration = null
         )
-    )
-    val state: StateFlow<HomeScreenState> = _state.asStateFlow()
-    
-    init {
-        Timber.d("HomeScreenViewModel initialized")
-        initializeState()
     }
     
     /**
