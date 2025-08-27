@@ -59,7 +59,7 @@ fun LiveShareButton(
     
     Box(
         modifier = modifier
-            .size(144.dp)
+            .size(128.dp)
             .background(Color(0xFFB791E0), CircleShape) // FORCE BRAND PURPLE
             .semantics {
                 contentDescription = contentDesc
@@ -67,7 +67,7 @@ fun LiveShareButton(
             }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = false, radius = 72.dp),
+                indication = ripple(bounded = false, radius = 64.dp),
                 onClick = {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     onToggle()

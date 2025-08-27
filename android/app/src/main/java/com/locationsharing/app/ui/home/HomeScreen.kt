@@ -115,37 +115,55 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
                 
-                // Lottie Animations Section (replaces Map Preview)
+                // Extra spacing for visual balance
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Lottie Animations Section (replaces Map Preview) - slightly smaller
                 MapAnimationsSection(
                     animationsEnabled = state.animationsEnabled,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                // Primary Live Share Button
-                LiveShareButton(
-                    isSharing = state.isLocationSharing,
-                    waitingForFix = state.isWaitingForLocationFix,
-                    onToggle = {
-                        if (state.isLocationSharing) {
-                            viewModel.stopLocationSharing()
-                        } else {
-                            viewModel.onEvent(HomeScreenEvent.StartSharing)
-                            navigationManager?.navigateToMap(startSharing = true)
-                            onStartShare()
-                        }
-                    },
                     modifier = Modifier
-                        .padding(vertical = 32.dp)
-                        .semantics { testTag = "ShareLocationBig" }
+                        .fillMaxWidth()
+                        .scale(0.9f) // Reduce size by 10% to not compete with main button
                 )
                 
-                // Friends & Settings Buttons (Material 3 OutlinedButton style)
+                // Primary Live Share Button with Label
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(vertical = 32.dp)
+                ) {
+                    LiveShareButton(
+                        isSharing = state.isLocationSharing,
+                        waitingForFix = state.isWaitingForLocationFix,
+                        onToggle = {
+                            if (state.isLocationSharing) {
+                                viewModel.stopLocationSharing()
+                            } else {
+                                viewModel.onEvent(HomeScreenEvent.StartSharing)
+                                navigationManager?.navigateToMap(startSharing = true)
+                                onStartShare()
+                            }
+                        },
+                        modifier = Modifier.semantics { testTag = "ShareLocationBig" }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    // Share Location label
+                    Text(
+                        text = if (state.isLocationSharing) "Stop Sharing" else "Start Sharing",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                
+                // Friends & Settings Buttons (Filled Purple Buttons)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     // Friends button
-                    OutlinedButton(
+                    Button(
                         onClick = {
                             viewModel.onEvent(HomeScreenEvent.NavigateToFriends)
                             navigationManager?.navigateToFriendsHub()
@@ -154,9 +172,14 @@ fun HomeScreen(
                             .weight(0.42f)
                             .padding(vertical = 12.dp),
                         shape = RoundedCornerShape(24.dp),
-                        border = ButtonDefaults.outlinedButtonBorder,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF6B4F8F)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFB791E0),
+                            contentColor = Color.White
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 4.dp,
+                            pressedElevation = 8.dp,
+                            hoveredElevation = 6.dp
                         )
                     ) {
                         Row(
@@ -166,18 +189,20 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.People,
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
+                                tint = Color.White
                             )
                             Text(
                                 text = "Friends",
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White
                             )
                         }
                     }
                     
                     // Settings button
-                    OutlinedButton(
+                    Button(
                         onClick = {
                             viewModel.onEvent(HomeScreenEvent.NavigateToSettings)
                             navigationManager?.navigateToSettings()
@@ -189,9 +214,14 @@ fun HomeScreen(
                                 contentDescription = "Navigate to settings screen"
                             },
                         shape = RoundedCornerShape(24.dp),
-                        border = ButtonDefaults.outlinedButtonBorder,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF6B4F8F)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFB791E0),
+                            contentColor = Color.White
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 4.dp,
+                            pressedElevation = 8.dp,
+                            hoveredElevation = 6.dp
                         )
                     ) {
                         Row(
@@ -201,12 +231,14 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
+                                tint = Color.White
                             )
                             Text(
                                 text = "Settings",
                                 style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White
                             )
                         }
                     }
