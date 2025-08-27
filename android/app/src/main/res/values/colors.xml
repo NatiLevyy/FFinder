@@ -4,6 +4,7 @@
     <color name="ffinder_primary">#2E7D32</color>          <!-- Requirement 10.1: Primary green -->
     <color name="ffinder_primary_variant">#1B5E20</color>
     <color name="ffinder_secondary">#6B4F8F</color>        <!-- Requirement 10.2: Secondary purple -->
+    <color name="ffinder_purple">#B791E0</color>          <!-- Brand purple for Share Location buttons -->
     <color name="ffinder_secondary_variant">#5A3F7A</color>
     
     <!-- Surface and Background Colors -->

@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 val FFinderPrimary = Color(0xFF2E7D32)        // Brand green (primary) - exact match from requirements
 val FFinderPrimaryVariant = Color(0xFF1B5E20) // Darker green variant
 val FFinderSecondary = Color(0xFF6B4F8F)      // Brand purple (secondary) - exact match from requirements
+val BrandPurple = Color(0xFFB791E0)           // Brand purple for Share Location buttons
 val FFinderSecondaryVariant = Color(0xFF5A3F7A) // Darker purple variant
 val FFinderAccent = Color(0xFF8BC34A)         // Light green accent
 

@@ -4,8 +4,6 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.People
@@ -24,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -40,6 +39,7 @@ import com.locationsharing.app.ui.home.components.*
 import com.locationsharing.app.ui.common.debounceClickable
 import com.locationsharing.app.ui.home.components.AccessibilityUtils
 import com.locationsharing.app.ui.theme.FFinderTheme
+import com.locationsharing.app.ui.theme.FFinderSecondary
 
 /**
  * Main HomeScreen composable that integrates all components with proper state management.
@@ -86,11 +86,10 @@ fun HomeScreen(
                 modifier = Modifier.zIndex(1f)
             )
             
-            // Scrollable content column
+            // Non-scrollable content column with controlled spacing
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
                     .padding(
                         horizontal = AccessibilityUtils.getResponsivePadding(
                             compactPadding = 16.dp,
@@ -99,28 +98,27 @@ fun HomeScreen(
                         )
                     ),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(
-                    AccessibilityUtils.getResponsiveSpacing(
-                        compactSpacing = 16.dp,
-                        mediumSpacing = 20.dp,
-                        expandedSpacing = 24.dp
-                    )
-                )
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
+                // Top section: Hero and Animation
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Premium hero section with logo and slow pulse
+                    PremiumHeroSection(
+                        animationsEnabled = state.animationsEnabled,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    // Lottie Animations Section (replaces Map Preview)
+                    MapAnimationsSection(
+                        animationsEnabled = state.animationsEnabled,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 
-                // Premium hero section with logo and slow pulse
-                PremiumHeroSection(
-                    animationsEnabled = state.animationsEnabled,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                // Lottie Animations Section (replaces Map Preview)
-                MapAnimationsSection(
-                    animationsEnabled = state.animationsEnabled,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                // Primary Live Share Button
+                // Center section: Main Action Button
                 LiveShareButton(
                     isSharing = state.isLocationSharing,
                     waitingForFix = state.isWaitingForLocationFix,
@@ -133,10 +131,10 @@ fun HomeScreen(
                             onStartShare()
                         }
                     },
-                    modifier = Modifier.padding(vertical = 32.dp)
+                    modifier = Modifier.semantics { testTag = "ShareLocationBig" }
                 )
                 
-                // Friends & Settings Buttons (Material 3 OutlinedButton style)
+                // Bottom section: Friends & Settings Buttons
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -149,11 +147,11 @@ fun HomeScreen(
                         },
                         modifier = Modifier
                             .weight(0.42f)
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = 8.dp),
                         shape = RoundedCornerShape(24.dp),
                         border = ButtonDefaults.outlinedButtonBorder,
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF6B4F8F)
+                            contentColor = FFinderSecondary
                         )
                     ) {
                         Row(
@@ -181,14 +179,14 @@ fun HomeScreen(
                         },
                         modifier = Modifier
                             .weight(0.42f)
-                            .padding(vertical = 12.dp)
+                            .padding(vertical = 8.dp)
                             .semantics {
                                 contentDescription = "Navigate to settings screen"
                             },
                         shape = RoundedCornerShape(24.dp),
                         border = ButtonDefaults.outlinedButtonBorder,
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF6B4F8F)
+                            contentColor = FFinderSecondary
                         )
                     ) {
                         Row(
@@ -210,9 +208,6 @@ fun HomeScreen(
                 }
                 
                 // What's New banner removed
-                
-                // Bottom spacing for comfortable scrolling
-                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
@@ -270,11 +265,10 @@ fun HomeScreenContent(
                 modifier = Modifier.zIndex(1f)
             )
             
-            // Scrollable content column
+            // Non-scrollable content column with controlled spacing
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
                     .padding(
                         horizontal = AccessibilityUtils.getResponsivePadding(
                             compactPadding = 16.dp,
@@ -283,28 +277,27 @@ fun HomeScreenContent(
                         )
                     ),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(
-                    AccessibilityUtils.getResponsiveSpacing(
-                        compactSpacing = 16.dp,
-                        mediumSpacing = 20.dp,
-                        expandedSpacing = 24.dp
-                    )
-                )
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
+                // Top section: Hero and Animation
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Premium hero section with logo and slow pulse
+                    PremiumHeroSection(
+                        animationsEnabled = state.animationsEnabled,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    // Lottie Animations Section (replaces Map Preview)
+                    MapAnimationsSection(
+                        animationsEnabled = state.animationsEnabled,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 
-                // Premium hero section with logo and slow pulse
-                PremiumHeroSection(
-                    animationsEnabled = state.animationsEnabled,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                // Lottie Animations Section (replaces Map Preview)
-                MapAnimationsSection(
-                    animationsEnabled = state.animationsEnabled,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                // Primary Live Share Button
+                // Center section: Main Action Button
                 LiveShareButton(
                     isSharing = state.isLocationSharing,
                     waitingForFix = state.isWaitingForLocationFix,
@@ -316,10 +309,10 @@ fun HomeScreenContent(
                             onStartShare()
                         }
                     },
-                    modifier = Modifier.padding(vertical = 32.dp)
+                    modifier = Modifier.semantics { testTag = "ShareLocationBig" }
                 )
                 
-                // Friends & Settings Buttons (Material 3 OutlinedButton style)
+                // Bottom section: Friends & Settings Buttons
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -332,14 +325,14 @@ fun HomeScreenContent(
                         },
                         modifier = Modifier
                             .weight(0.42f)
-                            .padding(vertical = 12.dp)
+                            .padding(vertical = 8.dp)
                             .semantics {
                                 contentDescription = "Navigate to friends screen"
                             },
                         shape = RoundedCornerShape(24.dp),
                         border = ButtonDefaults.outlinedButtonBorder,
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF6B4F8F)
+                            contentColor = FFinderSecondary
                         )
                     ) {
                         Row(
@@ -367,14 +360,14 @@ fun HomeScreenContent(
                         },
                         modifier = Modifier
                             .weight(0.42f)
-                            .padding(vertical = 12.dp)
+                            .padding(vertical = 8.dp)
                             .semantics {
                                 contentDescription = "Navigate to settings screen"
                             },
                         shape = RoundedCornerShape(24.dp),
                         border = ButtonDefaults.outlinedButtonBorder,
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF6B4F8F)
+                            contentColor = FFinderSecondary
                         )
                     ) {
                         Row(
@@ -396,9 +389,6 @@ fun HomeScreenContent(
                 }
                 
                 // What's New banner removed
-                
-                // Bottom spacing for comfortable scrolling
-                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
