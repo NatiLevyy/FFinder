@@ -11,7 +11,12 @@
       "Bash(keytool:*)",
       "Bash(curl:*)",
       "Bash(emulator:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git grep:*)",
+      "Bash(git checkout:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": [],

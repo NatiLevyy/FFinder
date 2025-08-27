@@ -46,8 +46,8 @@ fun QuickShareFAB(
                 role = Role.Button
             },
         shape = CircleShape,
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
+        containerColor = Color(0xFFB791E0),
+        contentColor = Color.Black,
         elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = 6.dp,
             pressedElevation = 8.dp,
@@ -58,7 +58,7 @@ fun QuickShareFAB(
             painter = painterResource(id = R.drawable.ic_pin_finder_vector),
             contentDescription = null, // Content description is on the FAB itself
             modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.onPrimary
+            tint = Color.Black
         )
     }
 }

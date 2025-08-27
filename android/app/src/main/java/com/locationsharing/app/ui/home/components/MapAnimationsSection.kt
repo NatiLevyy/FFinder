@@ -1,10 +1,8 @@
 package com.locationsharing.app.ui.home.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -21,14 +19,14 @@ import com.locationsharing.app.ui.theme.FFinderTheme
  * as a replacement for the Map Preview card.
  * 
  * This component shows a continuously looping Lottie animation:
- * - location_animation.json (fills the entire container)
+ * - location_animation.json (displayed directly on screen background)
  * 
  * Features:
- * - Rounded rectangle container with Material 3 surfaceVariant background
- * - 220dp height with appropriate padding
+ * - No visual container - seamlessly integrated into screen background
+ * - Full width animation display
  * - Accessibility support with contentDescription
  * - Test tag for UI testing
- * - Clean single animation display
+ * - Clean animation without background styling
  * 
  * @param modifier Modifier for styling and layout customization
  * @param animationsEnabled Whether animations should loop (for accessibility)
@@ -38,35 +36,19 @@ fun MapAnimationsSection(
     modifier: Modifier = Modifier,
     animationsEnabled: Boolean = true
 ) {
-    Card(
+    // Location animation displayed directly on screen background with controlled height
+    LottieAsset(
+        resId = R.raw.location_animation,
         modifier = modifier
             .fillMaxWidth()
-            .height(220.dp)
+            .height(160.dp)
             .testTag("map_animations_section")
             .semantics {
                 contentDescription = "Location animations"
             },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            // Location animation - fills the entire container
-            LottieAsset(
-                resId = R.raw.location_animation,
-                modifier = Modifier.fillMaxSize(),
-                iterations = if (animationsEnabled) LottieConstants.IterateForever else 1,
-                speed = if (animationsEnabled) 1f else 0f
-            )
-        }
-    }
+        iterations = if (animationsEnabled) LottieConstants.IterateForever else 1,
+        speed = if (animationsEnabled) 1f else 0f
+    )
 }
 
 @Preview(showBackground = true)

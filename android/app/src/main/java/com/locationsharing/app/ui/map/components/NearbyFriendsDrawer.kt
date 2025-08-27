@@ -323,7 +323,7 @@ private fun EmptyFriendsState(
             if (!hasSearchQuery) {
                 AnimatedPin(
                     modifier = Modifier.size(64.dp),
-                    tint = androidx.compose.ui.graphics.Color(0xFF6B4F8F), // Brand purple
+                    tint = androidx.compose.ui.graphics.Color(0xFFB791E0), // Brand purple
                     animated = false // Static for empty state as per requirements
                 )
                 
