@@ -46,6 +46,7 @@ fun LiveShareButton(
     
     // FORCE BRAND PURPLE - Debug logging
     Log.d("ColorProbe", "LiveShareButton FORCE PURPLE - isSharing=$isSharing")
+    Log.d("ColorProbe", "LiveShareButton - Lottie animation enlarged successfully")
     
     // FORCE brand purple background regardless of sharing state
     val backgroundColor = Color(0xFFB791E0) // FORCE BRAND PURPLE
@@ -58,7 +59,7 @@ fun LiveShareButton(
     
     Box(
         modifier = modifier
-            .size(128.dp)
+            .size(144.dp)
             .background(Color(0xFFB791E0), CircleShape) // FORCE BRAND PURPLE
             .semantics {
                 contentDescription = contentDesc
@@ -66,7 +67,7 @@ fun LiveShareButton(
             }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = false, radius = 64.dp),
+                indication = ripple(bounded = false, radius = 72.dp),
                 onClick = {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     onToggle()
@@ -81,7 +82,7 @@ fun LiveShareButton(
         // Use location_icon.json Lottie animation for Start Sharing button
         LottieAsset(
             resId = R.raw.location_icon,
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier.size(80.dp),
             iterations = if (waitingForFix || isSharing) LottieConstants.IterateForever else 1,
             speed = if (waitingForFix) 1.2f else 1f
         )
@@ -120,7 +121,7 @@ fun LiveShareButton(
 fun LiveShareButtonPreview() {
     FFinderTheme {
         Box(
-            modifier = Modifier.size(200.dp),
+            modifier = Modifier.size(220.dp),
             contentAlignment = Alignment.Center
         ) {
             LiveShareButton(
@@ -137,7 +138,7 @@ fun LiveShareButtonPreview() {
 fun LiveShareButtonSharingPreview() {
     FFinderTheme {
         Box(
-            modifier = Modifier.size(200.dp),
+            modifier = Modifier.size(220.dp),
             contentAlignment = Alignment.Center
         ) {
             LiveShareButton(
@@ -154,7 +155,7 @@ fun LiveShareButtonSharingPreview() {
 fun LiveShareButtonWaitingPreview() {
     FFinderTheme {
         Box(
-            modifier = Modifier.size(200.dp),
+            modifier = Modifier.size(220.dp),
             contentAlignment = Alignment.Center
         ) {
             LiveShareButton(
