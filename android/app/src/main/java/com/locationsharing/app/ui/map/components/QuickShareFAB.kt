@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.locationsharing.app.R
 import com.locationsharing.app.ui.map.MapScreenConstants
 import com.locationsharing.app.ui.map.haptic.rememberMapHapticFeedbackManager
@@ -75,19 +76,9 @@ fun QuickShareFAB(
         com.locationsharing.app.ui.map.animations.MapMicroAnimations.FABLoadingPulse()
     } else 1f
     
-    // Determine FAB colors based on sharing state
-    val colorScheme = MaterialTheme.colorScheme
-    val containerColor = if (isLocationSharingActive) {
-        colorScheme.secondary // Purple when active
-    } else {
-        colorScheme.primary // Green when inactive
-    }
-    
-    val contentColor = if (isLocationSharingActive) {
-        colorScheme.onSecondary
-    } else {
-        colorScheme.onPrimary
-    }
+    // Use brand purple for consistent Share Location button styling
+    val containerColor = Color(0xFFB791E0)
+    val contentColor = Color.Black
     
     // Content description based on sharing state
     val contentDesc = if (isLocationSharingActive) {

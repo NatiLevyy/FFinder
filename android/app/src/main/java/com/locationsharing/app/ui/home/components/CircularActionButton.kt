@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.locationsharing.app.R
 import com.locationsharing.app.ui.components.AnimatedPin
 import com.locationsharing.app.ui.theme.FFinderTheme
+import com.locationsharing.app.ui.theme.FFinderPrimary
 
 /**
  * Circular action button for starting/stopping live sharing
@@ -46,7 +47,7 @@ fun CircularActionButton(
     val hapticFeedback = LocalHapticFeedback.current
     
     // Colors based on sharing state
-    val bgColor = if (isSharing) Color(0xFF2E7D32) /* green */ else Color(0xFF6B4F8F) /* purple */
+    val bgColor = if (isSharing) FFinderPrimary /* green */ else Color(0xFFB791E0) /* brand purple */
     
     // Scale animation for press feedback
     val scale = remember { Animatable(1f) }
@@ -87,7 +88,7 @@ fun CircularActionButton(
         // Use AnimatedPin for all states
         AnimatedPin(
             modifier = Modifier.size(if (isSharing) 48.dp else 64.dp),
-            tint = Color.White,
+            tint = if (isSharing) Color.White else Color.Black,
             animated = isWaitingForGPS  // Animate when waiting for GPS fix, static when sharing
         )
     }

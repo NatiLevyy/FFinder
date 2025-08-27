@@ -22,13 +22,13 @@ import com.locationsharing.app.R
  * - Customizable tint color
  * 
  * @param modifier Modifier for customization
- * @param tint Color tint to apply to the pin (default: brand purple #6B4F8F)
+ * @param tint Color tint to apply to the pin (default: brand purple #B791E0)
  * @param animated Whether to play the animation (currently uses static vector)
  */
 @Composable
 fun AnimatedPin(
     modifier: Modifier = Modifier,
-    tint: Color = Color(0xFF6B4F8F), // Brand purple as default
+    tint: Color = Color(0xFFB791E0), // Brand purple as default
     animated: Boolean = true
 ) {
     // Use the brand pin vector (static for now, can be enhanced with animation later)
@@ -52,7 +52,7 @@ fun AnimatedPin(
 @Composable
 fun StaticPin(
     modifier: Modifier = Modifier,
-    tint: Color = Color(0xFF6B4F8F)
+    tint: Color = Color(0xFFB791E0)
 ) {
     AnimatedPin(
         modifier = modifier,

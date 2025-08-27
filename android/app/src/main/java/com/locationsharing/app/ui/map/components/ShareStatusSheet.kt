@@ -175,7 +175,7 @@ private fun ShareStatusSheetContent(
         if (isAcquiringGPS) {
             AnimatedPin(
                 modifier = Modifier.size(120.dp),
-                tint = Color(0xFF6B4F8F), // Brand purple
+                tint = Color(0xFFB791E0), // Brand purple
                 animated = true // Always animate when acquiring GPS
             )
             
