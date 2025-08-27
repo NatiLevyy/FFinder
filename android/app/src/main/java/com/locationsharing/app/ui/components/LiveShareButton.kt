@@ -10,14 +10,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.ripple
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -29,9 +30,12 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import android.util.Log
 import com.locationsharing.app.R
 import com.locationsharing.app.ui.components.LottieAsset
 import com.locationsharing.app.ui.theme.FFinderTheme
+import com.locationsharing.app.ui.theme.FFinderPrimary
+import com.locationsharing.app.ui.theme.BrandPurple
 import com.airbnb.lottie.compose.LottieConstants
 
 @Composable
@@ -43,8 +47,10 @@ fun LiveShareButton(
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     
-    // Purple ring + teal core color scheme
-    val backgroundColor = if (isSharing) Color(0xFF2E7D32) else Color(0xFF6B4F8F)
+    // FORCE BRAND PURPLE - DEBUGGING
+    Log.d("ColorProbe", "LiveShareButton FORCE PURPLE - isSharing=$isSharing")
+    Log.d("ColorProbe", "Expected color should be: ffb791e0 (light purple)")
+    // Temporarily forcing brand purple regardless of sharing state for debugging
     
     // Click animation: scale 0.94 → overshoot 1.02 → settle 1.00
     val scale = remember { Animatable(1f) }
@@ -52,9 +58,12 @@ fun LiveShareButton(
     // Content description for accessibility
     val contentDesc = if (isSharing) "Stop sharing location" else "Start live sharing"
     
-    Card(
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = modifier
             .size(128.dp)
+            .shadow(8.dp, CircleShape)
+            .background(Color(0xFFB791E0), CircleShape) // FORCE BRAND PURPLE
             .semantics {
                 contentDescription = contentDesc
                 role = Role.Button
@@ -70,27 +79,15 @@ fun LiveShareButton(
             .graphicsLayer { 
                 scaleX = scale.value
                 scaleY = scale.value
-            },
-        shape = CircleShape,
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 8.dp
-        )
+            }
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Use location_icon.json Lottie animation for Start Sharing button
-            LottieAsset(
-                resId = R.raw.location_icon,
-                modifier = Modifier.size(48.dp),
-                iterations = if (waitingForFix || isSharing) LottieConstants.IterateForever else 1,
-                speed = if (waitingForFix) 1.2f else 1f
-            )
-        }
+        // Use location_icon.json Lottie animation for Start Sharing button
+        LottieAsset(
+            resId = R.raw.location_icon,
+            modifier = Modifier.size(48.dp),
+            iterations = if (waitingForFix || isSharing) LottieConstants.IterateForever else 1,
+            speed = if (waitingForFix) 1.2f else 1f
+        )
     }
     
     // Handle click animation
