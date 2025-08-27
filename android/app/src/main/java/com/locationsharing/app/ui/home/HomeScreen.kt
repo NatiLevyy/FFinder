@@ -133,7 +133,9 @@ fun HomeScreen(
                             onStartShare()
                         }
                     },
-                    modifier = Modifier.padding(vertical = 32.dp)
+                    modifier = Modifier
+                        .padding(vertical = 32.dp)
+                        .semantics { testTag = "ShareLocationBig" }
                 )
                 
                 // Friends & Settings Buttons (Material 3 OutlinedButton style)

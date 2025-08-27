@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import android.util.Log
 import com.locationsharing.app.R
 import com.locationsharing.app.ui.components.LottieAsset
 import com.locationsharing.app.ui.theme.FFinderTheme
@@ -43,8 +44,11 @@ fun LiveShareButton(
 ) {
     val hapticFeedback = LocalHapticFeedback.current
     
-    // Purple ring + teal core color scheme
-    val backgroundColor = if (isSharing) Color(0xFF2E7D32) else Color(0xFF6B4F8F)
+    // FORCE BRAND PURPLE - Debug logging
+    Log.d("ColorProbe", "LiveShareButton FORCE PURPLE - isSharing=$isSharing")
+    
+    // FORCE brand purple background regardless of sharing state
+    val backgroundColor = Color(0xFFB791E0) // FORCE BRAND PURPLE
     
     // Click animation: scale 0.94 → overshoot 1.02 → settle 1.00
     val scale = remember { Animatable(1f) }
@@ -52,9 +56,10 @@ fun LiveShareButton(
     // Content description for accessibility
     val contentDesc = if (isSharing) "Stop sharing location" else "Start live sharing"
     
-    Card(
+    Box(
         modifier = modifier
             .size(128.dp)
+            .background(Color(0xFFB791E0), CircleShape) // FORCE BRAND PURPLE
             .semantics {
                 contentDescription = contentDesc
                 role = Role.Button
@@ -71,26 +76,15 @@ fun LiveShareButton(
                 scaleX = scale.value
                 scaleY = scale.value
             },
-        shape = CircleShape,
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 8.dp
-        )
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Use location_icon.json Lottie animation for Start Sharing button
-            LottieAsset(
-                resId = R.raw.location_icon,
-                modifier = Modifier.size(48.dp),
-                iterations = if (waitingForFix || isSharing) LottieConstants.IterateForever else 1,
-                speed = if (waitingForFix) 1.2f else 1f
-            )
-        }
+        // Use location_icon.json Lottie animation for Start Sharing button
+        LottieAsset(
+            resId = R.raw.location_icon,
+            modifier = Modifier.size(48.dp),
+            iterations = if (waitingForFix || isSharing) LottieConstants.IterateForever else 1,
+            speed = if (waitingForFix) 1.2f else 1f
+        )
     }
     
     // Handle click animation
